@@ -1,0 +1,12 @@
+# Data storage for ratings
+# Structure:
+# items:
+#   identifier1:
+#     name: "Human Readable Name"
+#     ratings:
+#       - rating: 5
+#         timestamp: "2023-11-12 10:30:45"
+#       - rating: 4
+#         timestamp: "2023-11-12 11:15:22"
+
+items: {}
