@@ -243,13 +243,13 @@
                 
                 if (response.ok) {
                     showResult(
-                        `Rating submitted! ⭐<br><div class="stats">Average: ${data.average} stars (${data.count} ratings)</div>`,
+                        `Rating submitted! ⭐<br><div class="stats">Average: ${escapeHtml(data.average)} stars (${escapeHtml(data.count)} ratings)</div>`,
                         'success'
                     );
                     selectedRating = 0;
                     updateStars();
                 } else {
-                    showResult(data.error || 'Failed to submit rating', 'error');
+                    showResult(escapeHtml(data.error || 'Failed to submit rating'), 'error');
                 }
             } catch (error) {
                 showResult('Network error. Please try again.', 'error');
@@ -273,7 +273,7 @@
                     showResult('No ratings found for this item', 'error');
                 } else {
                     showResult(
-                        `<strong>${itemId}</strong><br><div class="stats">Average: ${data.average} stars<br>Total ratings: ${data.count}</div>`,
+                        `<strong>${escapeHtml(itemId)}</strong><br><div class="stats">Average: ${escapeHtml(data.average)} stars<br>Total ratings: ${escapeHtml(data.count)}</div>`,
                         'success'
                     );
                 }
@@ -291,6 +291,12 @@
             setTimeout(() => {
                 resultDiv.style.display = 'none';
             }, 5000);
+        }
+        
+        function escapeHtml(text) {
+            const div = document.createElement('div');
+            div.textContent = text;
+            return div.innerHTML;
         }
         
         // Allow Enter key to submit
