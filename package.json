@@ -1,0 +1,15 @@
+{
+  "name": "rate-anything-webapp",
+  "version": "1.0.0",
+  "description": "A lightweight web app to streamline simple ratings of anything. It is based on qr codes that identify things.",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js"
+  },
+  "keywords": ["rating", "qr-code", "webapp"],
+  "author": "",
+  "license": "ISC",
+  "dependencies": {
+    "express": "^4.18.2"
+  }
+}
