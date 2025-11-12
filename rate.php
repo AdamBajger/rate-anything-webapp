@@ -4,6 +4,17 @@ header('Content-Type: application/json');
 // Load configuration
 $config = yaml_parse_file('config.yaml');
 $ratingsFile = $config['storage']['ratings_file'] ?? 'ratings.yaml';
+
+// Validate ratings file path (prevent directory traversal)
+$ratingsFile = basename($ratingsFile);
+if (!preg_match('/^[a-zA-Z0-9_\-]+\.yaml$/', $ratingsFile)) {
+    echo json_encode([
+        'success' => false,
+        'message' => 'Invalid ratings file configuration'
+    ]);
+    exit;
+}
+
 $minRating = $config['rating_scale']['min'] ?? 1;
 $maxRating = $config['rating_scale']['max'] ?? 5;
 
@@ -16,6 +27,16 @@ if (!$itemId) {
     echo json_encode([
         'success' => false,
         'message' => 'Item ID is required'
+    ]);
+    exit;
+}
+
+// Sanitize item ID to prevent any potential issues
+$itemId = trim($itemId);
+if (strlen($itemId) > 255) {
+    echo json_encode([
+        'success' => false,
+        'message' => 'Item ID is too long'
     ]);
     exit;
 }
