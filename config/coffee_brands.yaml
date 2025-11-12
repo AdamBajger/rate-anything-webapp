@@ -1,0 +1,52 @@
+# Coffee Brand Rating Configuration
+# This configuration file sets up a rating context for coffee brands
+
+# Name of the YAML file where ratings will be stored
+ratings_storage: coffee_brand_ratings.yaml
+
+# Regex pattern to extract human-readable names from QR code identifiers
+# Pattern: Extracts brand name from identifiers like "coffee_brand_starbucks" or "cb_lavazza"
+# Group 1 captures the brand name portion
+name_extraction_regex: "^(?:coffee_brand_|cb_)(.+)$"
+
+# Display texts and titles for the web application
+display:
+  # Title shown in the browser tab
+  page_title: "Coffee Brand Ratings"
+  
+  # Main heading on the rating page
+  main_heading: "Rate Your Coffee Brand"
+  
+  # Description of what is being rated
+  rating_subject: "coffee brand"
+  
+  # Instructions text shown to users
+  instructions: "Scan the QR code on your coffee package to rate this brand. Your feedback helps other coffee lovers make better choices!"
+  
+  # Text shown after successful rating submission
+  success_message: "Thank you for rating this coffee brand!"
+  
+  # Label for the rating item display
+  item_label: "Brand"
+
+# Rating scale configuration
+rating_scale:
+  min: 1
+  max: 5
+  labels:
+    1: "Poor"
+    2: "Fair"
+    3: "Good"
+    4: "Very Good"
+    5: "Excellent"
+
+# Optional: Categories for detailed ratings
+rating_categories:
+  - name: "Taste"
+    description: "Overall flavor and taste quality"
+  - name: "Aroma"
+    description: "Smell and fragrance"
+  - name: "Value"
+    description: "Price to quality ratio"
+  - name: "Packaging"
+    description: "Package design and sustainability"
