@@ -1,6 +1,11 @@
 # Rating configurations indexed by UUID
 # Each UUID corresponds to a specific rating setup
 
+# Storage configuration
+storage:
+  ratings_file: ratings.yaml
+
+# UUID-based configurations
 configs:
   # Example configuration 1 - Restaurant rating
   550e8400-e29b-41d4-a716-446655440000:
