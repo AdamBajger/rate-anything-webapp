@@ -1,0 +1,13 @@
+# Ignore ratings data file (contains user data)
+ratings.yaml
+
+# Ignore OS files
+.DS_Store
+Thumbs.db
+
+# Ignore editor files
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
