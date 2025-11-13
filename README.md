@@ -178,3 +178,4 @@ You can use any QR code generator to create codes for your items. The codes shou
 ## License
 
 This project is open source and available under the MIT License.
+
