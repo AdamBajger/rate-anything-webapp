@@ -1,0 +1,20 @@
+# Composer dependencies
+/vendor/
+composer.lock
+
+# PHP
+*.log
+
+# Runtime data
+ratings.yaml
+
+# IDE
+.idea/
+.vscode/
+*.swp
+*.swo
+*~
+
+# OS
+.DS_Store
+Thumbs.db
