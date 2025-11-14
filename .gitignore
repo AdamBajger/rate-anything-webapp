@@ -1,13 +1,20 @@
-# Ignore ratings data file (contains user data)
+# Composer dependencies
+/vendor/
+composer.lock
+
+# PHP
+*.log
+
+# Runtime data
 ratings.yaml
 
-# Ignore OS files
-.DS_Store
-Thumbs.db
-
-# Ignore editor files
-.vscode/
+# IDE
 .idea/
+.vscode/
 *.swp
 *.swo
 *~
+
+# OS
+.DS_Store
+Thumbs.db

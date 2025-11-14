@@ -1,8 +1,31 @@
 <?php
 header('Content-Type: application/json');
 
+// Get UUID from request
+$uuid = $_GET['uuid'] ?? $_POST['uuid'] ?? null;
+
+// Validate UUID format
+if (!$uuid || !preg_match('/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i', $uuid)) {
+    echo json_encode([
+        'success' => false,
+        'message' => 'Invalid or missing UUID'
+    ]);
+    exit;
+}
+
 // Load configuration
 $config = yaml_parse_file('config.yaml');
+
+// Check if UUID exists in configs
+if (!isset($config['configs'][$uuid])) {
+    echo json_encode([
+        'success' => false,
+        'message' => 'Configuration not found for this UUID'
+    ]);
+    exit;
+}
+
+$ratingConfig = $config['configs'][$uuid];
 $ratingsFile = $config['storage']['ratings_file'] ?? 'ratings.yaml';
 
 // Validate ratings file path (prevent directory traversal)
@@ -15,8 +38,8 @@ if (!preg_match('/^[a-zA-Z0-9_\-]+\.yaml$/', $ratingsFile)) {
     exit;
 }
 
-$minRating = $config['rating_scale']['min'] ?? 1;
-$maxRating = $config['rating_scale']['max'] ?? 5;
+$minRating = $ratingConfig['rating_scale']['min'] ?? 1;
+$maxRating = $ratingConfig['rating_scale']['max'] ?? 5;
 
 // Get POST data
 $itemId = $_POST['item_id'] ?? null;
@@ -69,9 +92,15 @@ if (file_exists($ratingsFile)) {
     }
 }
 
+// Use UUID-specific storage key
+$storageKey = $uuid . '::' . $itemId;
+
 // Initialize item ratings if not exists
-if (!isset($ratings[$itemId])) {
-    $ratings[$itemId] = [
+if (!isset($ratings[$storageKey])) {
+    $ratings[$storageKey] = [
+        'uuid' => $uuid,
+        'item_id' => $itemId,
+        'config_name' => $ratingConfig['name'] ?? 'Unknown',
         'ratings' => [],
         'count' => 0,
         'sum' => 0,
@@ -80,13 +109,13 @@ if (!isset($ratings[$itemId])) {
 }
 
 // Add new rating
-$ratings[$itemId]['ratings'][] = [
+$ratings[$storageKey]['ratings'][] = [
     'rating' => $rating,
     'timestamp' => date('Y-m-d H:i:s')
 ];
-$ratings[$itemId]['count']++;
-$ratings[$itemId]['sum'] += $rating;
-$ratings[$itemId]['average'] = round($ratings[$itemId]['sum'] / $ratings[$itemId]['count'], 2);
+$ratings[$storageKey]['count']++;
+$ratings[$storageKey]['sum'] += $rating;
+$ratings[$storageKey]['average'] = round($ratings[$storageKey]['sum'] / $ratings[$storageKey]['count'], 2);
 
 // Save ratings to YAML file
 $yamlContent = yaml_emit($ratings);
@@ -96,9 +125,10 @@ echo json_encode([
     'success' => true,
     'message' => 'Rating submitted successfully!',
     'data' => [
+        'uuid' => $uuid,
         'item_id' => $itemId,
         'rating' => $rating,
-        'average' => $ratings[$itemId]['average'],
-        'count' => $ratings[$itemId]['count']
+        'average' => $ratings[$storageKey]['average'],
+        'count' => $ratings[$storageKey]['count']
     ]
 ]);
