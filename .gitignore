@@ -1,6 +1,6 @@
 # IDE and editor files
-.vscode/
 .idea/
+.vscode/
 *.swp
 *.swo
 *~
@@ -12,7 +12,13 @@ Thumbs.db
 # Temporary files
 /tmp/
 *.tmp
+
+# PHP
 *.log
+
+# Runtime data
+ratings.yaml
+data.yaml
 
 # Dependencies (if using Composer)
 /vendor/

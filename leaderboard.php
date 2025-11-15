@@ -1,61 +1,105 @@
 <?php
+/**
+ * Leaderboard page for UUID-based rating system
+ * Shows statistics and rankings for a specific UUID configuration
+ */
+
+// Error reporting for development
+error_reporting(E_ALL);
+ini_set('display_errors', 1);
+
 // Load helper functions
 require_once 'functions.php';
 
-// Load configuration and data
-$config = loadYaml('config.yaml');
-$data = loadYaml('data.yaml');
+/**
+ * Validate UUID format (RFC 4122)
+ */
+function isValidUuid($uuid) {
+    $pattern = '/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i';
+    return preg_match($pattern, $uuid) === 1;
+}
 
-// Get success message if redirected from submit
-$success = isset($_GET['success']) && $_GET['success'] == '1';
-$submittedIdentifier = $_GET['identifier'] ?? null;
+// Get UUID from query parameter
+$uuid = isset($_GET['uuid']) ? trim($_GET['uuid']) : null;
 
-// Calculate statistics for all items
-$leaderboard = [];
-if (isset($data['items']) && is_array($data['items'])) {
-    foreach ($data['items'] as $identifier => $itemData) {
-        $stats = calculateStats($itemData['ratings'] ?? []);
-        $leaderboard[] = [
-            'identifier' => $identifier,
-            'name' => $itemData['name'] ?? parseIdentifier($identifier, $config),
-            'stats' => $stats,
-            'ratings' => $itemData['ratings'] ?? []
-        ];
+// Validate UUID
+if (!$uuid || !isValidUuid($uuid)) {
+    http_response_code(400);
+    die('Invalid or missing UUID parameter');
+}
+
+// Load configuration
+$config = yaml_parse_file('config.yaml');
+if (!$config || !isset($config['configs'][$uuid])) {
+    http_response_code(404);
+    die('Configuration not found for UUID: ' . htmlspecialchars($uuid));
+}
+
+$ratingConfig = $config['configs'][$uuid];
+$configName = $ratingConfig['name'] ?? 'Unknown Configuration';
+$configDescription = $ratingConfig['description'] ?? '';
+$ratingsFile = $config['storage']['ratings_file'] ?? 'ratings.yaml';
+$minRating = $ratingConfig['rating_scale']['min'] ?? 1;
+$maxRating = $ratingConfig['rating_scale']['max'] ?? 5;
+$ratingLabels = $ratingConfig['rating_scale']['labels'] ?? [];
+
+// Load ratings data
+$allRatings = [];
+if (file_exists($ratingsFile)) {
+    $ratingsData = yaml_parse_file($ratingsFile);
+    if (is_array($ratingsData)) {
+        $allRatings = $ratingsData;
     }
 }
 
-// Sort by average rating (descending)
-usort($leaderboard, function($a, $b) {
-    if ($a['stats']['average'] === $b['stats']['average']) {
-        return $b['stats']['count'] - $a['stats']['count'];
+// Filter ratings for this UUID
+$uuidRatings = [];
+$prefix = $uuid . '::';
+foreach ($allRatings as $key => $data) {
+    if (strpos($key, $prefix) === 0) {
+        $uuidRatings[] = $data;
     }
-    return $b['stats']['average'] <=> $a['stats']['average'];
+}
+
+// Sort by average rating (descending), then by count
+usort($uuidRatings, function($a, $b) {
+    if ($a['average'] === $b['average']) {
+        return $b['count'] - $a['count'];
+    }
+    return $b['average'] <=> $a['average'];
 });
 
 // Calculate overall statistics
 $totalRatings = 0;
-$totalItems = count($leaderboard);
-foreach ($leaderboard as $item) {
-    $totalRatings += $item['stats']['count'];
+$totalItems = count($uuidRatings);
+foreach ($uuidRatings as $item) {
+    $totalRatings += $item['count'];
 }
+
+// Check for success message
+$success = isset($_GET['success']) && $_GET['success'] == '1';
+$submittedItemId = $_GET['item_id'] ?? null;
 ?>
 <!DOCTYPE html>
 <html lang="en">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Leaderboard - Rate Anything</title>
+    <title>Leaderboard - <?php echo htmlspecialchars($configName); ?></title>
     <link rel="stylesheet" href="style.css">
 </head>
 <body>
     <div class="container">
         <h1>📊 Leaderboard</h1>
+        <p class="text-center" style="color: white; margin-bottom: 20px;">
+            <?php echo htmlspecialchars($configName); ?>
+        </p>
         
         <?php if ($success): ?>
             <div class="alert alert-success">
                 ✓ Rating submitted successfully!
-                <?php if ($submittedIdentifier): ?>
-                    <strong><?php echo htmlspecialchars($submittedIdentifier); ?></strong>
+                <?php if ($submittedItemId): ?>
+                    <strong><?php echo htmlspecialchars($submittedItemId); ?></strong>
                 <?php endif; ?>
             </div>
         <?php endif; ?>
@@ -84,9 +128,9 @@ foreach ($leaderboard as $item) {
             </div>
         </div>
 
-        <?php if (empty($leaderboard)): ?>
+        <?php if (empty($uuidRatings)): ?>
             <div class="card">
-                <p class="text-center">No ratings yet. <a href="index.php">Be the first to rate!</a></p>
+                <p class="text-center">No ratings yet. <a href="index.php?uuid=<?php echo urlencode($uuid); ?>">Be the first to rate!</a></p>
             </div>
         <?php else: ?>
             <div class="card">
@@ -99,12 +143,11 @@ foreach ($leaderboard as $item) {
                                 <th>Item</th>
                                 <th>Average Rating</th>
                                 <th>Total Ratings</th>
-                                <th>Min/Max</th>
                                 <th>Latest Rating</th>
                             </tr>
                         </thead>
                         <tbody>
-                            <?php foreach ($leaderboard as $index => $item): ?>
+                            <?php foreach ($uuidRatings as $index => $item): ?>
                                 <?php
                                 $rank = $index + 1;
                                 $medal = '';
@@ -113,7 +156,8 @@ foreach ($leaderboard as $item) {
                                 elseif ($rank === 3) $medal = '🥉';
                                 
                                 $latestRating = end($item['ratings']);
-                                $isRecent = $item['identifier'] === $submittedIdentifier;
+                                $isRecent = $item['item_id'] === $submittedItemId;
+                                $humanName = parseIdentifier($item['item_id'], $config);
                                 ?>
                                 <tr class="<?php echo $isRecent ? 'highlight' : ''; ?>">
                                     <td class="rank">
@@ -121,19 +165,16 @@ foreach ($leaderboard as $item) {
                                         #<?php echo $rank; ?>
                                     </td>
                                     <td class="item-name">
-                                        <strong><?php echo htmlspecialchars($item['name']); ?></strong>
-                                        <small class="identifier"><?php echo htmlspecialchars($item['identifier']); ?></small>
+                                        <strong><?php echo htmlspecialchars($humanName); ?></strong>
+                                        <small class="identifier"><?php echo htmlspecialchars($item['item_id']); ?></small>
                                     </td>
                                     <td class="average-rating">
                                         <span class="rating-stars">
-                                            <?php echo str_repeat('⭐', (int)round($item['stats']['average'])); ?>
+                                            <?php echo str_repeat('⭐', (int)round($item['average'])); ?>
                                         </span>
-                                        <span class="rating-value"><?php echo $item['stats']['average']; ?></span>
+                                        <span class="rating-value"><?php echo $item['average']; ?></span>
                                     </td>
-                                    <td class="count"><?php echo $item['stats']['count']; ?></td>
-                                    <td class="min-max">
-                                        <?php echo $item['stats']['min']; ?> / <?php echo $item['stats']['max']; ?>
-                                    </td>
+                                    <td class="count"><?php echo $item['count']; ?></td>
                                     <td class="latest">
                                         <?php if ($latestRating): ?>
                                             <span class="rating-badge"><?php echo $latestRating['rating']; ?>⭐</span>
@@ -149,32 +190,35 @@ foreach ($leaderboard as $item) {
 
             <div class="card">
                 <h2>Detailed Statistics</h2>
-                <?php foreach ($leaderboard as $item): ?>
+                <?php foreach ($uuidRatings as $item): ?>
+                    <?php $humanName = parseIdentifier($item['item_id'], $config); ?>
                     <div class="item-details">
-                        <h3><?php echo htmlspecialchars($item['name']); ?></h3>
+                        <h3><?php echo htmlspecialchars($humanName); ?></h3>
                         <div class="rating-distribution">
                             <?php
                             // Count ratings by value
                             $distribution = [];
-                            $maxRating = $config['rating']['max'] ?? 5;
-                            for ($i = 1; $i <= $maxRating; $i++) {
+                            for ($i = $minRating; $i <= $maxRating; $i++) {
                                 $distribution[$i] = 0;
                             }
                             foreach ($item['ratings'] as $r) {
-                                $distribution[$r['rating']]++;
+                                if (isset($distribution[$r['rating']])) {
+                                    $distribution[$r['rating']]++;
+                                }
                             }
                             
                             // Calculate percentages
-                            $total = $item['stats']['count'];
+                            $total = $item['count'];
                             ?>
                             <div class="distribution-bars">
-                                <?php for ($i = $maxRating; $i >= 1; $i--): ?>
+                                <?php for ($i = $maxRating; $i >= $minRating; $i--): ?>
                                     <?php
                                     $count = $distribution[$i];
                                     $percentage = $total > 0 ? ($count / $total) * 100 : 0;
+                                    $label = isset($ratingLabels[$i]) ? $ratingLabels[$i] : $i;
                                     ?>
                                     <div class="bar-row">
-                                        <span class="bar-label"><?php echo $i; ?>⭐</span>
+                                        <span class="bar-label"><?php echo $i; ?>⭐ <?php echo htmlspecialchars($label); ?></span>
                                         <div class="bar-container">
                                             <div class="bar" style="width: <?php echo $percentage; ?>%"></div>
                                         </div>
@@ -189,9 +233,10 @@ foreach ($leaderboard as $item) {
                                 <?php
                                 $recentRatings = array_slice(array_reverse($item['ratings']), 0, 5);
                                 foreach ($recentRatings as $r):
+                                    $ratingLabel = isset($ratingLabels[$r['rating']]) ? ' - ' . $ratingLabels[$r['rating']] : '';
                                 ?>
                                     <li>
-                                        <?php echo str_repeat('⭐', $r['rating']); ?>
+                                        <?php echo str_repeat('⭐', $r['rating']); ?> (<?php echo $r['rating']; ?><?php echo htmlspecialchars($ratingLabel); ?>)
                                         <small><?php echo $r['timestamp']; ?></small>
                                     </li>
                                 <?php endforeach; ?>
@@ -203,7 +248,8 @@ foreach ($leaderboard as $item) {
         <?php endif; ?>
 
         <div class="form-actions">
-            <a href="index.php" class="btn btn-primary">Rate Another Item</a>
+            <a href="index.php?uuid=<?php echo urlencode($uuid); ?>" class="btn btn-primary">Rate Items</a>
+            <a href="index.php" class="btn btn-secondary">Change Configuration</a>
         </div>
     </div>
 </body>

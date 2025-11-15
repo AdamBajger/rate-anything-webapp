@@ -389,8 +389,9 @@ td {
 }
 
 .bar-label {
-    min-width: 50px;
+    min-width: 150px;
     font-weight: 600;
+    font-size: 0.9em;
 }
 
 .bar-container {
