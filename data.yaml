@@ -1,0 +1,28 @@
+---
+items:
+  item-001-coffee-machine:
+    name: Coffee Machine
+    ratings:
+    - rating: 5
+      timestamp: "2025-11-15 10:21:42"
+  item-002-tea-maker:
+    name: Tea Maker
+    ratings:
+    - rating: 4
+      timestamp: "2025-11-15 10:21:52"
+  item-003-water-cooler:
+    name: Water Cooler
+    ratings:
+    - rating: 3
+      timestamp: "2025-11-15 10:21:52"
+  test-001-item:
+    name: Item
+    ratings:
+    - rating: 5
+      timestamp: "2025-11-15 10:49:16"
+  test-item-001:
+    name: Test Item 001
+    ratings:
+    - rating: 5
+      timestamp: "2025-11-15 15:14:15"
+...

@@ -1,20 +1,25 @@
-# Composer dependencies
-/vendor/
-composer.lock
-
-# PHP
-*.log
-
-# Runtime data
-ratings.yaml
-
-# IDE
+# IDE and editor files
 .idea/
 .vscode/
 *.swp
 *.swo
 *~
 
-# OS
+# OS files
 .DS_Store
 Thumbs.db
+
+# Temporary files
+/tmp/
+*.tmp
+
+# PHP
+*.log
+
+# Runtime data
+ratings.yaml
+data.yaml
+
+# Dependencies (if using Composer)
+/vendor/
+composer.lock
