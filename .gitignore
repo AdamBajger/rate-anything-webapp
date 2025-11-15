@@ -1,3 +1,30 @@
+# IDE and editor files
+.idea/
+.vscode/
+*.swp
+*.swo
+*~
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# Temporary files
+/tmp/
+*.tmp
+
+# PHP
+*.log
+
+# Runtime data
+ratings.yaml
+data.yaml
+
+# Dependencies (if using Composer)
+/vendor/
+composer.lock
+
+# Node.js
 node_modules/
 npm-debug.log
 .env
