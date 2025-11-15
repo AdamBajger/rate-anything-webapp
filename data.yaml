@@ -20,5 +20,9 @@ items:
     ratings:
     - rating: 5
       timestamp: "2025-11-15 10:49:16"
+  test-item-001:
+    name: Test Item 001
+    ratings:
+    - rating: 5
+      timestamp: "2025-11-15 15:14:15"
 ...
-# Merge complete - simple design preserved
