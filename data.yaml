@@ -15,4 +15,9 @@ items:
     ratings:
     - rating: 3
       timestamp: "2025-11-15 10:21:52"
+  test-001-item:
+    name: Item
+    ratings:
+    - rating: 5
+      timestamp: "2025-11-15 10:49:16"
 ...
