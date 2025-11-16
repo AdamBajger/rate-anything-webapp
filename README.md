@@ -1,182 +1,291 @@
-# rate-anything-webapp
+# Rate Anything Web Application
 
-This project contains a lightweight web app to streamline simple ratings of anything. It is based on QR codes that identify things, with support for multiple UUID-based rating configurations.
+A lightweight web application for rating items using QR code scanning. The application provides a simple, responsive interface for collecting and displaying ratings with persistent storage in YAML format.
 
 ## Overview
 
-The application uses UUIDs to identify different rating configurations. Each UUID corresponds to a specific rating setup (e.g., restaurant rating, product review, service quality) defined in the `config.yaml` file. Users can scan QR codes to identify items and rate them according to the selected configuration.
+This application enables users to scan QR codes or manually select items to rate them on a configurable scale (default 1-5). All ratings are stored persistently in YAML files and displayed in a leaderboard with detailed statistics. The design is modular and follows best practices for potential future migration to database storage.
 
-## Features
+## Architecture
 
-- 📱 **QR Code Scanner**: Built-in camera-based QR code scanning using html5-qrcode library
-- 🎯 **UUID-based Configurations**: Multiple rating setups, each with its own UUID
-- ⭐ **Flexible Rating Scales**: Configurable min/max rating values per configuration
-- 📊 **Ratings Storage**: All ratings stored in YAML format with averages and counts
-- 🎨 **Clean, Responsive UI**: Modern gradient design that works on all devices
-- ⚙️ **Easy Configuration**: Simple YAML configuration file
-- 🔒 **Security**: Input validation, XSS protection, and path sanitization
+The application consists of:
+- **index.php**: Main rating interface with QR code scanner and rating form
+- **submit.php**: Backend handler for processing and storing ratings
+- **leaderboard.php**: Display interface for ratings statistics and rankings
+- **functions.php**: Core utility functions for data persistence and processing
+- **style.css**: Responsive stylesheet with gradient design
+- **config.yaml**: Application configuration (rating scale, identifier parsing rules)
+- **data.yaml**: Persistent storage for all ratings (auto-generated)
 
-## Requirements
+## Key Features
 
-- PHP 7.0 or higher
-- PHP YAML extension (`php-yaml`)
-- Web server (Apache, Nginx, or PHP built-in server)
-- Modern web browser with camera support for QR code scanning
+- QR Code Scanner: Camera-based scanning using html5-qrcode library
+- Flexible Rating Scale: Configurable minimum and maximum values with custom labels
+- Persistent Storage: YAML-based data storage with complete rating history
+- Statistics Dashboard: Leaderboard with averages, distributions, and recent ratings
+- Responsive Design: Mobile-friendly interface that works on all devices
+- Identifier Parsing: Configurable rules for converting identifiers to human-readable names
+- Input Validation: XSS protection and sanitization for all user inputs
+- Modular Design: Storage layer designed for easy migration to database systems
 
-## Installation
+## System Requirements
 
-1. Clone this repository:
+- PHP 8.0 or higher
+- PHP YAML extension (php-yaml)
+- Web server (Apache recommended for production)
+- Modern web browser with camera support for QR scanning
+- Docker and Docker Compose (for containerized deployment)
+
+## Docker Deployment (Recommended)
+
+The application is designed to run in a Docker container for consistent deployment across environments.
+
+### Important: PHP YAML Extension Requirement
+
+This application requires the PHP YAML extension. Due to connectivity limitations in certain build environments, the YAML extension cannot always be automatically installed during the Docker build process. 
+
+**For production deployment on Google Compute Engine or similar platforms with full internet access, the extension should install successfully during the build.**
+
+If you encounter issues, the application will display an error message requesting installation of the extension. The code is designed to handle missing extensions gracefully without crashing.
+
+### Quick Start with Docker
+
+1. Clone the repository:
    ```bash
    git clone https://github.com/AdamBajger/rate-anything-webapp.git
    cd rate-anything-webapp
    ```
 
-2. Install PHP YAML extension (if not already installed):
+2. Build the Docker image:
    ```bash
-   # Ubuntu/Debian
-   sudo apt-get install php-yaml
-   
-   # macOS with Homebrew
-   pecl install yaml
-   
-   # Or via PECL
-   sudo pecl install yaml
+   docker build -t rate-anything-webapp .
    ```
 
-3. Start the PHP development server:
+3. Run the container:
+   ```bash
+   docker run -d -p 8080:80 --name rate-app rate-anything-webapp
+   ```
+
+4. Access the application at `http://localhost:8080`
+
+### Persistent Data Storage
+
+To persist ratings across container restarts, mount a volume for the data file:
+
+```bash
+docker run -d -p 8080:80 \
+  -v $(pwd)/data.yaml:/var/www/html/data.yaml \
+  --name rate-app rate-anything-webapp
+```
+
+### Custom Configuration
+
+To use custom rating scales and identifier parsing rules:
+
+```bash
+docker run -d -p 8080:80 \
+  -v $(pwd)/config.yaml:/var/www/html/config.yaml \
+  -v $(pwd)/data.yaml:/var/www/html/data.yaml \
+  --name rate-app rate-anything-webapp
+```
+
+### Docker Run Options
+
+Basic deployment:
+```bash
+docker run -d -p 8080:80 --name rate-app rate-anything-webapp
+```
+
+With persistent data volume:
+```bash
+docker run -d -p 8080:80 \
+  -v $(pwd)/data.yaml:/var/www/html/data.yaml \
+  --name rate-app rate-anything-webapp
+```
+
+With custom configuration:
+```bash
+docker run -d -p 8080:80 \
+  -v $(pwd)/config.yaml:/var/www/html/config.yaml \
+  -v $(pwd)/data.yaml:/var/www/html/data.yaml \
+  --name rate-app rate-anything-webapp
+```
+
+## Manual Installation (Development Only)
+
+For local development without Docker:
+
+1. Install PHP 8.0+ and the YAML extension:
+   ```bash
+   # Ubuntu/Debian
+   sudo apt-get install php php-yaml
+   
+   # macOS with Homebrew
+   brew install php
+   pecl install yaml
+   ```
+
+2. Start the PHP development server:
    ```bash
    php -S localhost:8080
    ```
 
-4. Open your browser and navigate to `http://localhost:8080`
+3. Open your browser and navigate to `http://localhost:8080`
 
 ## Usage
 
-### Selecting a Configuration
-
-1. Navigate to `http://localhost:8080/index.php` (without UUID parameter)
-2. You'll see a list of all available rating configurations
-3. Click "Start Rating" on any configuration to begin
-
-### Direct Access with UUID
-
-Access a specific configuration directly by providing its UUID:
-
-```
-http://localhost:8080/index.php?uuid=550e8400-e29b-41d4-a716-446655440000
-```
-
 ### Rating Items
 
-1. **Start Scanning**: Click "Start Scanning" to activate your device's camera
-2. **Scan QR Code**: Point your camera at a QR code containing an item identifier
-3. **Select Rating**: Choose a rating based on the configuration's scale
+1. **Scan QR Code**: The scanner starts automatically on page load. Point your camera at a QR code containing an item identifier
+2. **Manual Entry**: Alternatively, select from tracked items or enter an identifier manually
+3. **Select Rating**: Choose a rating from the configured scale (default: 1-5)
 4. **Submit**: Click "Submit Rating" to save your rating
-5. **Continue**: Scan another item or change configuration
+5. **View Results**: You'll be redirected to the leaderboard showing all ratings
 
-### Example URLs
+### Identifier Format
 
-- Restaurant Rating: `index.php?uuid=550e8400-e29b-41d4-a716-446655440000`
-- Product Review: `index.php?uuid=6ba7b810-9dad-11d1-80b4-00c04fd430c8`
-- Service Quality: `index.php?uuid=7c9e6679-7425-40de-944b-e07fc1f90ae7`
+Item identifiers should follow the pattern configured in `config.yaml`. Default pattern:
+- Format: `item-XXX-descriptive-name`
+- Example: `item-001-coffee-machine`
+- The application extracts the descriptive part using regex (e.g., "coffee-machine")
 
 ## Configuration
 
-Rating configurations are stored in `config.yaml`. Each configuration is identified by a UUID and includes:
-
-- `name` - Display name of the rating configuration
-- `description` - Description of what is being rated
-- `type` - Type of rating (e.g., restaurant, product, service)
-- `rating_scale` - Min and max values for the rating scale
-- `categories` - Array of rating categories with weights (displayed to users)
+The application is configured through `config.yaml` which controls rating scale and identifier parsing.
 
 ### Configuration File Structure
 
 ```yaml
-# Storage configuration
-storage:
-  ratings_file: ratings.yaml
+# Rating scale configuration
+rating:
+  min: 1
+  max: 5
+  labels:
+    1: "Poor"
+    2: "Fair"
+    3: "Good"
+    4: "Very Good"
+    5: "Excellent"
 
-# UUID-based configurations
-configs:
-  550e8400-e29b-41d4-a716-446655440000:
-    name: "Restaurant Quality Rating"
-    description: "Rate the quality of your dining experience"
-    type: "restaurant"
-    rating_scale:
-      min: 1
-      max: 5
-    categories:
-      - name: "Food Quality"
-        weight: 0.4
-      - name: "Service"
-        weight: 0.3
-      - name: "Ambiance"
-        weight: 0.2
-      - name: "Value for Money"
-        weight: 0.1
+# Identifier parsing configuration
+identifier:
+  # Regular expression to extract name (first captured group)
+  regex: "^[a-z]+-\\d+-(.*?)$"
 ```
 
-### Adding New Configurations
+### Customizing Rating Scale
 
-1. Generate a new UUID (v4): https://www.uuidgenerator.net/
-2. Add the configuration to `config.yaml` under `configs:`
-3. Set the name, description, type, rating scale, and categories
-4. Save the file - the new configuration will be immediately available
+Edit the `rating` section in `config.yaml`:
+- `min`: Minimum rating value (default: 1)
+- `max`: Maximum rating value (default: 5)
+- `labels`: Custom labels for each rating value
+
+### Customizing Identifier Parsing
+
+Edit the `identifier` section to control how item identifiers are parsed:
+- `regex`: Pattern to extract the name from identifiers (first captured group is used)
+
+Example: With regex `^[a-z]+-\\d+-(.*?)$`, the identifier "item-001-coffee-machine" extracts "coffee-machine"
+
+## Data Storage
+
+### Storage Format
+
+Ratings are stored in `data.yaml` with the following structure:
+
+```yaml
+items:
+  item-001-coffee-machine:
+    name: Coffee Machine
+    ratings:
+      - rating: 5
+        timestamp: "2025-11-15 10:21:42"
+      - rating: 4
+        timestamp: "2025-11-15 12:30:15"
+```
+
+### Storage Layer Design
+
+The storage layer in `functions.php` is designed to be modular and easily replaceable:
+
+- `loadYaml($filename)`: Loads data from YAML file
+- `saveYaml($filename, $data)`: Saves data to YAML file
+- `calculateStats($ratings)`: Computes statistics from rating array
+
+To migrate to a database:
+1. Replace `loadYaml()` and `saveYaml()` with database operations
+2. Maintain the same data structure (array format)
+3. Update `calculateStats()` if needed for SQL aggregation
+4. The rest of the application code remains unchanged
+
+### Data Persistence
+
+- `data.yaml` is automatically created on first rating submission
+- The file is excluded from version control via `.gitignore`
+- In Docker deployments, use volumes to persist data between container restarts
+- Backup `data.yaml` regularly to prevent data loss
+
+## QR Code Integration
+
+Generate QR codes that encode item identifiers. Recommended tools:
+- Online: qr-code-generator.com, qrcode-monkey.com
+- Command line: `qrencode` utility
+- Programmatic: Any QR code generation library
+
+### QR Code Content Format
+
+The QR code should contain a simple text identifier:
+- Good: `item-001-coffee-machine`
+- Good: `device-abc-123`
+- Good: `product-XYZ`
+
+The application will scan the QR code and use the content as the item identifier.
+
+## Security
+
+The application implements several security measures:
+
+- **Input Sanitization**: All user inputs are sanitized before display
+- **XSS Protection**: `htmlspecialchars()` used for all output
+- **Path Validation**: File operations restricted to application directory
+- **Data Validation**: Rating values validated against configured scale
+- **No SQL Injection**: File-based storage eliminates SQL injection risks
+- **CORS Headers**: Properly configured for cross-origin requests
 
 ## File Structure
 
 ```
 rate-anything-webapp/
-├── config.yaml      # Application and rating configurations
-├── index.php        # Main application page with UUID-based QR scanner
-├── rate.php         # Backend handler for rating submissions
-├── ratings.yaml     # Storage for all ratings (auto-generated)
-├── .gitignore       # Git ignore rules
-└── README.md        # This file
+├── index.php           # Main rating interface with QR scanner
+├── submit.php          # Rating submission handler
+├── leaderboard.php     # Statistics and leaderboard display
+├── functions.php       # Core utility functions and storage layer
+├── style.css           # Responsive stylesheet
+├── config.yaml         # Application configuration
+├── data.yaml           # Persistent rating storage (auto-generated)
+├── Dockerfile          # Docker container definition
+├── .dockerignore       # Docker build exclusions
+├── .gitignore          # Git exclusions
+└── README.md           # This documentation
 ```
 
-## Data Format
+## Troubleshooting
 
-Ratings are stored in `ratings.yaml` with UUID-prefixed keys:
+### Camera Not Working
+- Ensure HTTPS is enabled (browsers require secure context for camera access)
+- Check browser permissions for camera access
+- Try using manual entry instead
 
-```yaml
-550e8400-e29b-41d4-a716-446655440000::item_123:
-  uuid: 550e8400-e29b-41d4-a716-446655440000
-  item_id: item_123
-  config_name: "Restaurant Quality Rating"
-  ratings:
-    - rating: 5
-      timestamp: "2025-11-13 10:30:00"
-    - rating: 4
-      timestamp: "2025-11-13 10:35:00"
-  count: 2
-  sum: 9
-  average: 4.5
-```
+### Ratings Not Saving
+- Check file permissions on `data.yaml`
+- Ensure PHP has write access to the application directory
+- In Docker, verify volume mounts are configured correctly
 
-This format allows the same item to be rated under different configurations without conflicts.
-
-## QR Code Integration
-
-Generate QR codes that encode item identifiers. When users scan these codes with the app:
-1. The QR code content (item ID) is captured
-2. The item ID is displayed along with rating options
-3. Users select a rating and submit
-4. The rating is saved with the UUID, item ID, and timestamp
-
-You can use any QR code generator to create codes for your items. The codes should contain simple text identifiers (e.g., "ITEM001", "TABLE-5", "PRODUCT-ABC").
-
-## Security Notes
-
-- UUID format validation prevents malformed requests
-- Configuration file path validation prevents directory traversal
-- Item IDs are length-limited and sanitized
-- All user input is escaped with `htmlspecialchars()` to prevent XSS
-- The `ratings.yaml` file is excluded from version control (via `.gitignore`)
+### Docker Container Issues
+- Check container logs: `docker logs rate-app`
+- Verify port 8080 is not already in use
+- Ensure Docker has sufficient resources
 
 ## License
 
 This project is open source and available under the MIT License.
-
-
