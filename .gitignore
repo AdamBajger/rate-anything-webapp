@@ -23,3 +23,4 @@ data.yaml
 # Dependencies (if using Composer)
 /vendor/
 composer.lock
+# Merged and resolved README.md conflict
