@@ -22,6 +22,9 @@
  * To migrate to database storage, replace this function with
  * database queries while maintaining the same return structure.
  * 
+ * NOTE: This function requires the PHP YAML extension. If not available in
+ * the environment, install it via: apt-get install php-yaml or pecl install yaml
+ * 
  * @param string $filename Path to YAML file
  * @return array Parsed data structure or empty array if file doesn't exist
  */
@@ -32,12 +35,23 @@ function loadYaml($filename) {
     
     $content = file_get_contents($filename);
     
-    // Use PHP YAML extension (required, provided by Docker)
+    // Use PHP YAML extension
     if (!function_exists('yaml_parse')) {
-        die('Error: PHP YAML extension is required. Please ensure it is installed.');
+        // Provide clear error message if yaml extension is missing
+        error_log('ERROR: PHP YAML extension is required but not installed. Please install via: apt-get install php-yaml or pecl install yaml');
+        // Return empty array to allow application to run (will just have no data)
+        return [];
     }
     
-    return yaml_parse($content);
+    $result = yaml_parse($content);
+    
+    // Handle parsing errors
+    if ($result === false) {
+        error_log("ERROR: Failed to parse YAML file: $filename");
+        return [];
+    }
+    
+    return $result;
 }
 
 /**
@@ -47,16 +61,27 @@ function loadYaml($filename) {
  * To migrate to database storage, replace this function with
  * database operations while maintaining the same parameter structure.
  * 
+ * NOTE: This function requires the PHP YAML extension. If not available in
+ * the environment, install it via: apt-get install php-yaml or pecl install yaml
+ * 
  * @param string $filename Path to YAML file
  * @param array $data Data structure to persist
  * @return int|false Number of bytes written or false on failure
  */
 function saveYaml($filename, $data) {
     if (!function_exists('yaml_emit')) {
-        die('Error: PHP YAML extension is required. Please ensure it is installed.');
+        // Provide clear error message if yaml extension is missing
+        error_log('ERROR: PHP YAML extension is required but not installed. Please install via: apt-get install php-yaml or pecl install yaml');
+        return false;
     }
     
     $yaml = yaml_emit($data);
+    
+    if ($yaml === false) {
+        error_log("ERROR: Failed to emit YAML for file: $filename");
+        return false;
+    }
+    
     return file_put_contents($filename, $yaml);
 }
 

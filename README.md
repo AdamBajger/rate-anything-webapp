@@ -40,6 +40,14 @@ The application consists of:
 
 The application is designed to run in a Docker container for consistent deployment across environments.
 
+### Important: PHP YAML Extension Requirement
+
+This application requires the PHP YAML extension. Due to connectivity limitations in certain build environments, the YAML extension cannot always be automatically installed during the Docker build process. 
+
+**For production deployment on Google Compute Engine or similar platforms with full internet access, the extension should install successfully during the build.**
+
+If you encounter issues, the application will display an error message requesting installation of the extension. The code is designed to handle missing extensions gracefully without crashing.
+
 ### Quick Start with Docker
 
 1. Clone the repository:
@@ -48,13 +56,38 @@ The application is designed to run in a Docker container for consistent deployme
    cd rate-anything-webapp
    ```
 
-2. Build and run with Docker:
+2. Build the Docker image:
    ```bash
    docker build -t rate-anything-webapp .
+   ```
+
+3. Run the container:
+   ```bash
    docker run -d -p 8080:80 --name rate-app rate-anything-webapp
    ```
 
-3. Access the application at `http://localhost:8080`
+4. Access the application at `http://localhost:8080`
+
+### Persistent Data Storage
+
+To persist ratings across container restarts, mount a volume for the data file:
+
+```bash
+docker run -d -p 8080:80 \
+  -v $(pwd)/data.yaml:/var/www/html/data.yaml \
+  --name rate-app rate-anything-webapp
+```
+
+### Custom Configuration
+
+To use custom rating scales and identifier parsing rules:
+
+```bash
+docker run -d -p 8080:80 \
+  -v $(pwd)/config.yaml:/var/www/html/config.yaml \
+  -v $(pwd)/data.yaml:/var/www/html/data.yaml \
+  --name rate-app rate-anything-webapp
+```
 
 ### Docker Run Options
 

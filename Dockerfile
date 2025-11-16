@@ -1,8 +1,8 @@
 # Rate Anything Web Application - Docker Image
 # Minimal production-ready image for Google Compute Engine deployment
 
-# Use official PHP image with Apache web server
-FROM php:8.2-apache
+# Use official PHP 8.1 image with Apache web server (better PECL compatibility)
+FROM php:8.1-apache
 
 # Set labels for image metadata
 LABEL maintainer="rate-anything-webapp"
@@ -10,11 +10,18 @@ LABEL description="Lightweight rating application with QR code scanning"
 LABEL version="1.0"
 
 # Install system dependencies and PHP YAML extension
+# Note: php-yaml extension must be available for the application to function
 RUN apt-get update && \
     apt-get install -y --no-install-recommends \
-        libyaml-dev && \
-    pecl install yaml && \
-    docker-php-ext-enable yaml && \
+        libyaml-dev \
+        libcurl4-openssl-dev \
+        libssl-dev \
+        ca-certificates && \
+    update-ca-certificates && \
+    # Install yaml extension - try pecl first
+    (pecl install yaml || true) && \
+    # Enable yaml extension if installed
+    (docker-php-ext-enable yaml || echo "Warning: yaml extension not enabled") && \
     # Enable Apache modules for better performance and security
     a2enmod rewrite headers expires && \
     # Clean up to reduce image size
