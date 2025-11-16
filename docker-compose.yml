@@ -1,0 +1,12 @@
+version: '3.8'
+
+services:
+  web:
+    build: .
+    ports:
+      - "8080:80"
+    volumes:
+      - ./ratings.yaml:/var/www/html/ratings.yaml
+      - ./data.yaml:/var/www/html/data.yaml
+    environment:
+      - TZ=UTC
