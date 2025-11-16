@@ -1,16 +1,44 @@
 <?php
-// Load helper functions
+/**
+ * Leaderboard and Statistics Display
+ * 
+ * Displays comprehensive statistics and rankings for all rated items.
+ * Features:
+ * - Overall statistics (total items, total ratings, average)
+ * - Ranked leaderboard sorted by average rating
+ * - Detailed rating distributions per item
+ * - Recent rating history
+ * 
+ * Query parameters:
+ * - success: Set to 1 to show success message after rating submission
+ * - identifier: Identifier of newly rated item to highlight
+ * 
+ * @package RateAnything
+ */
+
+// Set CORS headers for cross-origin requests
+header('Access-Control-Allow-Origin: *');
+header('Access-Control-Allow-Methods: GET, OPTIONS');
+header('Access-Control-Allow-Headers: Content-Type');
+
+// Handle preflight requests
+if ($_SERVER['REQUEST_METHOD'] === 'OPTIONS') {
+    http_response_code(200);
+    exit;
+}
+
+// Load core functions
 require_once 'functions.php';
 
-// Load configuration and data
+// Load application configuration and rating data
 $config = loadYaml('config.yaml');
 $data = loadYaml('data.yaml');
 
-// Get success message if redirected from submit
+// Check for success message parameters from rating submission
 $success = isset($_GET['success']) && $_GET['success'] == '1';
 $submittedIdentifier = $_GET['identifier'] ?? null;
 
-// Calculate statistics for all items
+// Build leaderboard data with calculated statistics
 $leaderboard = [];
 if (isset($data['items']) && is_array($data['items'])) {
     foreach ($data['items'] as $identifier => $itemData) {
@@ -24,7 +52,8 @@ if (isset($data['items']) && is_array($data['items'])) {
     }
 }
 
-// Sort by average rating (descending)
+// Sort leaderboard by average rating (descending)
+// Secondary sort by count for items with equal averages
 usort($leaderboard, function($a, $b) {
     if ($a['stats']['average'] === $b['stats']['average']) {
         return $b['stats']['count'] - $a['stats']['count'];
@@ -32,7 +61,7 @@ usort($leaderboard, function($a, $b) {
     return $b['stats']['average'] <=> $a['stats']['average'];
 });
 
-// Calculate overall statistics
+// Calculate overall statistics across all items
 $totalRatings = 0;
 $totalItems = count($leaderboard);
 foreach ($leaderboard as $item) {
@@ -49,11 +78,11 @@ foreach ($leaderboard as $item) {
 </head>
 <body>
     <div class="container">
-        <h1>📊 Leaderboard</h1>
+        <h1>Leaderboard</h1>
         
         <?php if ($success): ?>
             <div class="alert alert-success">
-                ✓ Rating submitted successfully!
+                Rating submitted successfully!
                 <?php if ($submittedIdentifier): ?>
                     <strong><?php echo htmlspecialchars($submittedIdentifier); ?></strong>
                 <?php endif; ?>
@@ -108,9 +137,9 @@ foreach ($leaderboard as $item) {
                                 <?php
                                 $rank = $index + 1;
                                 $medal = '';
-                                if ($rank === 1) $medal = '🥇';
-                                elseif ($rank === 2) $medal = '🥈';
-                                elseif ($rank === 3) $medal = '🥉';
+                                if ($rank === 1) $medal = '[1st]';
+                                elseif ($rank === 2) $medal = '[2nd]';
+                                elseif ($rank === 3) $medal = '[3rd]';
                                 
                                 $latestRating = end($item['ratings']);
                                 $isRecent = $item['identifier'] === $submittedIdentifier;
@@ -126,7 +155,7 @@ foreach ($leaderboard as $item) {
                                     </td>
                                     <td class="average-rating">
                                         <span class="rating-stars">
-                                            <?php echo str_repeat('⭐', (int)round($item['stats']['average'])); ?>
+                                            <?php echo str_repeat('*', (int)round($item['stats']['average'])); ?>
                                         </span>
                                         <span class="rating-value"><?php echo $item['stats']['average']; ?></span>
                                     </td>
@@ -136,7 +165,7 @@ foreach ($leaderboard as $item) {
                                     </td>
                                     <td class="latest">
                                         <?php if ($latestRating): ?>
-                                            <span class="rating-badge"><?php echo $latestRating['rating']; ?>⭐</span>
+                                            <span class="rating-badge"><?php echo $latestRating['rating']; ?> stars</span>
                                             <small><?php echo date('M d, H:i', strtotime($latestRating['timestamp'])); ?></small>
                                         <?php endif; ?>
                                     </td>
@@ -167,14 +196,14 @@ foreach ($leaderboard as $item) {
                             // Calculate percentages
                             $total = $item['stats']['count'];
                             ?>
-                            <div class="distribution-bars">
+                                <div class="distribution-bars">
                                 <?php for ($i = $maxRating; $i >= 1; $i--): ?>
                                     <?php
                                     $count = $distribution[$i];
                                     $percentage = $total > 0 ? ($count / $total) * 100 : 0;
                                     ?>
                                     <div class="bar-row">
-                                        <span class="bar-label"><?php echo $i; ?>⭐</span>
+                                        <span class="bar-label"><?php echo $i; ?> stars</span>
                                         <div class="bar-container">
                                             <div class="bar" style="width: <?php echo $percentage; ?>%"></div>
                                         </div>
@@ -191,7 +220,7 @@ foreach ($leaderboard as $item) {
                                 foreach ($recentRatings as $r):
                                 ?>
                                     <li>
-                                        <?php echo str_repeat('⭐', $r['rating']); ?>
+                                        <?php echo str_repeat('*', $r['rating']); ?>
                                         <small><?php echo $r['timestamp']; ?></small>
                                     </li>
                                 <?php endforeach; ?>

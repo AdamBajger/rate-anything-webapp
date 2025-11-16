@@ -1,11 +1,29 @@
 <?php
 /**
- * Helper functions for the rate-anything-webapp
+ * Core Utility Functions for Rate Anything Application
+ * 
+ * This file contains the core business logic and data persistence layer.
+ * All storage operations are abstracted through these functions to enable
+ * easy migration to database storage in the future.
+ * 
+ * Key functions:
+ * - loadYaml(): Load data from YAML storage
+ * - saveYaml(): Persist data to YAML storage
+ * - parseIdentifier(): Convert identifiers to human-readable names
+ * - calculateStats(): Compute statistics from rating arrays
+ * 
+ * @package RateAnything
  */
 
 /**
- * Simple YAML parser for basic structures
- * Supports simple key-value pairs and nested structures
+ * Load data from YAML file
+ * 
+ * This function serves as the primary data loading interface.
+ * To migrate to database storage, replace this function with
+ * database queries while maintaining the same return structure.
+ * 
+ * @param string $filename Path to YAML file
+ * @return array Parsed data structure or empty array if file doesn't exist
  */
 function loadYaml($filename) {
     if (!file_exists($filename)) {
@@ -14,179 +32,64 @@ function loadYaml($filename) {
     
     $content = file_get_contents($filename);
     
-    // Use symfony/yaml if available, otherwise fall back to simple parser
-    if (function_exists('yaml_parse')) {
-        return yaml_parse($content);
+    // Use PHP YAML extension (required, provided by Docker)
+    if (!function_exists('yaml_parse')) {
+        die('Error: PHP YAML extension is required. Please ensure it is installed.');
     }
     
-    // Simple YAML parser for basic structures
-    return parseSimpleYaml($content);
+    return yaml_parse($content);
 }
 
 /**
  * Save data to YAML file
+ * 
+ * This function serves as the primary data persistence interface.
+ * To migrate to database storage, replace this function with
+ * database operations while maintaining the same parameter structure.
+ * 
+ * @param string $filename Path to YAML file
+ * @param array $data Data structure to persist
+ * @return int|false Number of bytes written or false on failure
  */
 function saveYaml($filename, $data) {
-    if (function_exists('yaml_emit')) {
-        $yaml = yaml_emit($data);
-    } else {
-        $yaml = simpleYamlEmit($data);
+    if (!function_exists('yaml_emit')) {
+        die('Error: PHP YAML extension is required. Please ensure it is installed.');
     }
     
+    $yaml = yaml_emit($data);
     return file_put_contents($filename, $yaml);
 }
 
 /**
- * Simple YAML parser (fallback)
- */
-function parseSimpleYaml($content) {
-    $lines = explode("\n", $content);
-    $result = [];
-    $current = &$result;
-    $stack = [];
-    $lastIndent = 0;
-    
-    foreach ($lines as $line) {
-        // Skip comments and empty lines
-        if (preg_match('/^\s*#/', $line) || trim($line) === '') {
-            continue;
-        }
-        
-        // Calculate indentation
-        preg_match('/^(\s*)/', $line, $matches);
-        $indent = strlen($matches[1]);
-        $line = trim($line);
-        
-        // Handle indent changes
-        if ($indent < $lastIndent) {
-            $levelsBack = ($lastIndent - $indent) / 2;
-            for ($i = 0; $i < $levelsBack; $i++) {
-                array_pop($stack);
-            }
-            $current = &$stack[count($stack) - 1];
-        }
-        
-        $lastIndent = $indent;
-        
-        // Parse key-value pairs
-        if (preg_match('/^([^:]+):\s*(.*)$/', $line, $matches)) {
-            $key = trim($matches[1]);
-            $value = trim($matches[2]);
-            
-            if ($value === '' || $value === '{}') {
-                // Empty object/array
-                $current[$key] = [];
-                $stack[] = &$current[$key];
-                $current = &$current[$key];
-            } else {
-                // Parse value
-                if ($value === 'true') {
-                    $current[$key] = true;
-                } elseif ($value === 'false') {
-                    $current[$key] = false;
-                } elseif (is_numeric($value)) {
-                    $current[$key] = strpos($value, '.') !== false ? (float)$value : (int)$value;
-                } elseif (preg_match('/^["\'](.+)["\']$/', $value, $valueMatches)) {
-                    $current[$key] = $valueMatches[1];
-                } else {
-                    $current[$key] = $value;
-                }
-            }
-        } elseif (preg_match('/^-\s+(.+)$/', $line, $matches)) {
-            // Array item
-            $value = trim($matches[1]);
-            if (preg_match('/^([^:]+):\s*(.*)$/', $value, $kvMatches)) {
-                $item = [];
-                $key = trim($kvMatches[1]);
-                $val = trim($kvMatches[2]);
-                if (is_numeric($val)) {
-                    $item[$key] = strpos($val, '.') !== false ? (float)$val : (int)$val;
-                } else {
-                    $item[$key] = $val;
-                }
-                $current[] = $item;
-            } else {
-                $current[] = $value;
-            }
-        }
-    }
-    
-    return $result;
-}
-
-/**
- * Simple YAML emitter
- */
-function simpleYamlEmit($data, $indent = 0) {
-    $yaml = '';
-    $spaces = str_repeat(' ', $indent);
-    
-    if (is_array($data)) {
-        // Check if it's an associative array or indexed array
-        $isAssoc = array_keys($data) !== range(0, count($data) - 1);
-        
-        if ($isAssoc) {
-            foreach ($data as $key => $value) {
-                if (is_array($value)) {
-                    if (empty($value)) {
-                        $yaml .= $spaces . $key . ": {}\n";
-                    } else {
-                        $yaml .= $spaces . $key . ":\n";
-                        $yaml .= simpleYamlEmit($value, $indent + 2);
-                    }
-                } else {
-                    $yaml .= $spaces . $key . ": " . formatYamlValue($value) . "\n";
-                }
-            }
-        } else {
-            foreach ($data as $value) {
-                if (is_array($value)) {
-                    $yaml .= $spaces . "-\n";
-                    $yaml .= simpleYamlEmit($value, $indent + 2);
-                } else {
-                    $yaml .= $spaces . "- " . formatYamlValue($value) . "\n";
-                }
-            }
-        }
-    }
-    
-    return $yaml;
-}
-
-/**
- * Format value for YAML output
- */
-function formatYamlValue($value) {
-    if (is_bool($value)) {
-        return $value ? 'true' : 'false';
-    } elseif (is_numeric($value)) {
-        return $value;
-    } elseif (is_string($value) && (strpos($value, ':') !== false || strpos($value, '#') !== false)) {
-        return '"' . str_replace('"', '\\"', $value) . '"';
-    } else {
-        return $value;
-    }
-}
-
-/**
- * Parse identifier to human-readable format using config regex
+ * Parse identifier to human-readable format
+ * 
+ * Converts machine-readable identifiers to human-friendly display names
+ * using configuration rules from config.yaml.
+ * 
+ * Example transformations:
+ * - "item-001-coffee-machine" -> "Coffee Machine"
+ * - "device-abc-water-cooler" -> "Water Cooler"
+ * 
+ * @param string $identifier Raw item identifier
+ * @param array $config Configuration array with identifier parsing rules
+ * @return string Formatted human-readable name
  */
 function parseIdentifier($identifier, $config) {
     $regex = $config['identifier']['regex'] ?? '^[a-z]+-\\d+-(.*?)$';
     $format = $config['identifier']['format'] ?? 'title_case';
     $separator = $config['identifier']['separator'] ?? ' ';
     
-    // Try to extract the meaningful part using regex
+    // Extract meaningful part using regex pattern
     if (preg_match('/' . $regex . '/i', $identifier, $matches)) {
         $name = $matches[1] ?? $identifier;
     } else {
         $name = $identifier;
     }
     
-    // Replace dashes and underscores with separator
+    // Replace dashes and underscores with configured separator
     $name = str_replace(['-', '_'], $separator, $name);
     
-    // Apply formatting
+    // Apply formatting transformation
     switch ($format) {
         case 'title_case':
             $name = ucwords(strtolower($name));
@@ -199,7 +102,7 @@ function parseIdentifier($identifier, $config) {
             break;
         case 'as_is':
         default:
-            // Keep as is
+            // Keep original formatting
             break;
     }
     
@@ -207,7 +110,17 @@ function parseIdentifier($identifier, $config) {
 }
 
 /**
- * Calculate statistics for an item
+ * Calculate statistics for a set of ratings
+ * 
+ * Computes comprehensive statistics including count, average, total,
+ * minimum, and maximum values from an array of rating objects.
+ * 
+ * This function is designed to work with arrays of rating objects
+ * where each object has a 'rating' key. For database migration,
+ * this logic can be replaced with SQL aggregation functions.
+ * 
+ * @param array $ratings Array of rating objects with 'rating' keys
+ * @return array Statistics array with keys: count, average, total, min, max
  */
 function calculateStats($ratings) {
     if (empty($ratings)) {
@@ -220,6 +133,7 @@ function calculateStats($ratings) {
         ];
     }
     
+    // Extract rating values from rating objects
     $values = array_map(function($r) { return $r['rating']; }, $ratings);
     $count = count($values);
     $total = array_sum($values);

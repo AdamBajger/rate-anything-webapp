@@ -1,12 +1,36 @@
 <?php
-// Load YAML parser
+/**
+ * Main Rating Interface
+ * 
+ * This page provides the primary interface for submitting ratings.
+ * Features:
+ * - QR code scanner for automatic identifier capture
+ * - Dropdown selection of previously rated items
+ * - Manual identifier entry
+ * - Rating scale based on configuration
+ * 
+ * @package RateAnything
+ */
+
+// Set CORS headers for cross-origin requests
+header('Access-Control-Allow-Origin: *');
+header('Access-Control-Allow-Methods: GET, POST, OPTIONS');
+header('Access-Control-Allow-Headers: Content-Type');
+
+// Handle preflight requests
+if ($_SERVER['REQUEST_METHOD'] === 'OPTIONS') {
+    http_response_code(200);
+    exit;
+}
+
+// Load core functions
 require_once 'functions.php';
 
-// Load configuration
+// Load application configuration and existing data
 $config = loadYaml('config.yaml');
 $data = loadYaml('data.yaml');
 
-// Get list of tracked identifiers
+// Build list of previously tracked items for dropdown selection
 $trackedItems = [];
 if (isset($data['items']) && is_array($data['items'])) {
     foreach ($data['items'] as $identifier => $itemData) {
@@ -100,7 +124,7 @@ if (isset($data['items']) && is_array($data['items'])) {
                 
                 // Show success message
                 document.getElementById('qr-result').innerHTML = 
-                    `<span class="success">✓ Scanned: ${decodedText}</span>`;
+                    `<span class="success">Scanned successfully: ${decodedText}</span>`;
                 
                 // Scroll to rating form
                 document.getElementById('rating-form').scrollIntoView({ behavior: 'smooth' });

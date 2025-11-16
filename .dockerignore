@@ -1,8 +1,54 @@
+# Version control
 .git
 .gitignore
-README.md
-*.md
-.DS_Store
-Thumbs.db
+.gitattributes
+
+# Documentation (included in image for reference)
+# README.md is now included since it's the only documentation
+
+# IDE and editor files
 .idea
 .vscode
+.editorconfig
+*.swp
+*.swo
+*~
+
+# OS-specific files
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# Development and testing
+.env
+.env.local
+*.test
+test/
+tests/
+
+# Logs and temporary files
+*.log
+*.tmp
+/tmp/
+
+# Docker files (not needed in image)
+docker-compose.yml
+.dockerignore
+
+# CI/CD files
+.github/
+.gitlab-ci.yml
+.travis.yml
+
+# Package manager files
+composer.json
+composer.lock
+package.json
+package-lock.json
+yarn.lock
+node_modules/
+
+# Build artifacts
+/vendor/
+/dist/
+/build/
