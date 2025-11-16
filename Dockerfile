@@ -1,24 +1,26 @@
-# Use Node.js LTS version
-FROM node:18-alpine
+# Use official PHP image with Apache
+FROM php:8.2-apache
+
+# Install PHP YAML extension
+RUN apt-get update && \
+    apt-get install -y libyaml-dev && \
+    pecl install yaml && \
+    docker-php-ext-enable yaml && \
+    apt-get clean && \
+    rm -rf /var/lib/apt/lists/*
 
 # Set working directory
-WORKDIR /app
-
-# Copy package files
-COPY package*.json ./
-
-# Install dependencies
-RUN npm install --production
+WORKDIR /var/www/html
 
 # Copy application files
-COPY server.js ./
-COPY public ./public
+COPY . /var/www/html/
 
-# Expose port 3000
-EXPOSE 3000
+# Set proper permissions
+RUN chown -R www-data:www-data /var/www/html && \
+    chmod -R 755 /var/www/html
 
-# Set environment variable
-ENV PORT=3000
+# Expose port 80
+EXPOSE 80
 
-# Start the application
-CMD ["node", "server.js"]
+# Start Apache
+CMD ["apache2-foreground"]

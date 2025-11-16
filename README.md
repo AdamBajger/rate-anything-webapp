@@ -1,148 +1,12 @@
 # rate-anything-webapp
 
-This project contains a lightweight web app to streamline simple ratings of anything. It is based on QR codes that identify things.
+This project contains a lightweight web app to streamline simple ratings of anything. It is based on QR codes that identify things, with support for multiple UUID-based rating configurations.
 
-The repository includes **two implementations**:
-1. **Node.js/Express** - Simple REST API with web interface (Docker-ready)
-2. **PHP** - UUID-based configurations with QR scanner and leaderboard
-
----
-
-## Node.js/Express Implementation
-
-A modern, containerized rating application with REST API.
-
-### Features
-- Simple and intuitive rating interface
-- Rate items using 1-5 star system
-- View average ratings and total count
-- QR code-based item identification
-- In-memory storage (for demo purposes)
-- XSS protection via HTML escaping
-
-### Running with Docker
-
-#### Option 1: Using Docker Compose (Recommended)
-```bash
-docker-compose up
-```
-
-To run in detached mode:
-```bash
-docker-compose up -d
-```
-
-To stop:
-```bash
-docker-compose down
-```
-
-#### Option 2: Using Docker directly
-
-Build the Docker image:
-```bash
-docker build -t rate-anything-webapp .
-```
-
-Run the container:
-```bash
-docker run -p 3000:3000 rate-anything-webapp
-```
-
-The app will be available at `http://localhost:3000`
-
-Run in detached mode:
-```bash
-docker run -d -p 3000:3000 --name rate-app rate-anything-webapp
-```
-
-Stop the container:
-```bash
-docker stop rate-app
-docker rm rate-app
-```
-
-### Running without Docker
-
-#### Prerequisites
-- Node.js 18 or higher
-
-#### Installation
-```bash
-npm install
-```
-
-#### Start the server
-```bash
-npm start
-```
-
-The app will be available at `http://localhost:3000`
-
-### How to Use
-1. Enter an Item ID (e.g., a QR code identifier like "ITEM-001")
-2. Select a rating from 1 to 5 stars
-3. Click "Submit Rating" to record your rating
-4. Click "View Ratings" to see the average rating and total count for any item
-
-### API Endpoints
-
-The application provides RESTful API endpoints:
-
-#### Submit a Rating
-```bash
-POST /api/rate
-Content-Type: application/json
-
-{
-  "itemId": "ITEM-001",
-  "rating": 5
-}
-```
-
-Response:
-```json
-{
-  "success": true,
-  "itemId": "ITEM-001",
-  "rating": 5,
-  "count": 1,
-  "average": "5.00"
-}
-```
-
-#### Get Ratings for an Item
-```bash
-GET /api/ratings/:itemId
-```
-
-Response:
-```json
-{
-  "itemId": "ITEM-001",
-  "count": 1,
-  "average": "5.00",
-  "ratings": [5]
-}
-```
-
-### Technology Stack
-- **Backend**: Node.js with Express.js
-- **Frontend**: HTML5, CSS3, Vanilla JavaScript
-- **Storage**: In-memory (for demo purposes)
-- **Containerization**: Docker
-
----
-
-## PHP Implementation
-
-A UUID-based rating system with QR code scanning and leaderboard functionality.
-
-### Overview
+## Overview
 
 The application uses UUIDs to identify different rating configurations. Each UUID corresponds to a specific rating setup (e.g., restaurant rating, product review, service quality) defined in the `config.yaml` file. Users can scan QR codes to identify items and rate them according to the selected configuration.
 
-### Features
+## Features
 
 - 📱 **QR Code Scanner**: Built-in camera-based QR code scanning using html5-qrcode library
 - 🎯 **UUID-based Configurations**: Multiple rating setups, each with its own UUID
@@ -151,15 +15,57 @@ The application uses UUIDs to identify different rating configurations. Each UUI
 - 🎨 **Clean, Responsive UI**: Modern gradient design that works on all devices
 - ⚙️ **Easy Configuration**: Simple YAML configuration file
 - 🔒 **Security**: Input validation, XSS protection, and path sanitization
+- 🐳 **Docker Support**: Easy deployment with Docker and Docker Compose
 
-### Requirements
+## Requirements
 
+### Running with Docker (Recommended)
+- Docker
+- Docker Compose
+
+### Running Locally
 - PHP 7.0 or higher
 - PHP YAML extension (`php-yaml`)
 - Web server (Apache, Nginx, or PHP built-in server)
 - Modern web browser with camera support for QR code scanning
 
-### Installation
+## Installation & Running
+
+### Option 1: Using Docker Compose (Easiest)
+
+1. Clone this repository:
+   ```bash
+   git clone https://github.com/AdamBajger/rate-anything-webapp.git
+   cd rate-anything-webapp
+   ```
+
+2. Start the application:
+   ```bash
+   docker-compose up
+   ```
+
+3. Open your browser and navigate to `http://localhost:8080`
+
+4. To stop the application:
+   ```bash
+   docker-compose down
+   ```
+
+### Option 2: Using Docker directly
+
+1. Build the Docker image:
+   ```bash
+   docker build -t rate-anything-webapp .
+   ```
+
+2. Run the container:
+   ```bash
+   docker run -p 8080:80 rate-anything-webapp
+   ```
+
+3. Access the app at `http://localhost:8080`
+
+### Option 3: Running Locally without Docker
 
 1. Clone this repository:
    ```bash
@@ -186,15 +92,15 @@ The application uses UUIDs to identify different rating configurations. Each UUI
 
 4. Open your browser and navigate to `http://localhost:8080`
 
-### Usage
+## Usage
 
-#### Selecting a Configuration
+### Selecting a Configuration
 
 1. Navigate to `http://localhost:8080/index.php` (without UUID parameter)
 2. You'll see a list of all available rating configurations
 3. Click "Start Rating" on any configuration to begin
 
-#### Direct Access with UUID
+### Direct Access with UUID
 
 Access a specific configuration directly by providing its UUID:
 
@@ -202,7 +108,7 @@ Access a specific configuration directly by providing its UUID:
 http://localhost:8080/index.php?uuid=550e8400-e29b-41d4-a716-446655440000
 ```
 
-#### Rating Items
+### Rating Items
 
 1. **Start Scanning**: Click "Start Scanning" to activate your device's camera
 2. **Scan QR Code**: Point your camera at a QR code containing an item identifier
@@ -210,13 +116,13 @@ http://localhost:8080/index.php?uuid=550e8400-e29b-41d4-a716-446655440000
 4. **Submit**: Click "Submit Rating" to save your rating
 5. **Continue**: Scan another item or change configuration
 
-#### Example URLs
+### Example URLs
 
 - Restaurant Rating: `index.php?uuid=550e8400-e29b-41d4-a716-446655440000`
 - Product Review: `index.php?uuid=6ba7b810-9dad-11d1-80b4-00c04fd430c8`
 - Service Quality: `index.php?uuid=7c9e6679-7425-40de-944b-e07fc1f90ae7`
 
-### Configuration
+## Configuration
 
 Rating configurations are stored in `config.yaml`. Each configuration is identified by a UUID and includes:
 
@@ -226,7 +132,7 @@ Rating configurations are stored in `config.yaml`. Each configuration is identif
 - `rating_scale` - Min and max values for the rating scale
 - `categories` - Array of rating categories with weights (displayed to users)
 
-#### Configuration File Structure
+### Configuration File Structure
 
 ```yaml
 # Storage configuration
@@ -253,14 +159,14 @@ configs:
         weight: 0.1
 ```
 
-#### Adding New Configurations
+### Adding New Configurations
 
 1. Generate a new UUID (v4): https://www.uuidgenerator.net/
 2. Add the configuration to `config.yaml` under `configs:`
 3. Set the name, description, type, rating scale, and categories
 4. Save the file - the new configuration will be immediately available
 
-### PHP File Structure
+## File Structure
 
 ```
 rate-anything-webapp/
@@ -269,14 +175,16 @@ rate-anything-webapp/
 ├── leaderboard.php  # Leaderboard display
 ├── submit.php       # Backend handler for rating submissions
 ├── functions.php    # Helper functions
-├── style.css        # Styles for PHP implementation
+├── style.css        # Styles
 ├── ratings.yaml     # Storage for all ratings (auto-generated)
 ├── data.yaml        # Additional data storage
+├── Dockerfile       # Docker configuration
+├── docker-compose.yml # Docker Compose configuration
 ├── .gitignore       # Git ignore rules
 └── README.md        # This file
 ```
 
-### Data Format
+## Data Format
 
 Ratings are stored in `ratings.yaml` with UUID-prefixed keys:
 
@@ -297,7 +205,7 @@ Ratings are stored in `ratings.yaml` with UUID-prefixed keys:
 
 This format allows the same item to be rated under different configurations without conflicts.
 
-### QR Code Integration
+## QR Code Integration
 
 Generate QR codes that encode item identifiers. When users scan these codes with the app:
 1. The QR code content (item ID) is captured
@@ -307,7 +215,7 @@ Generate QR codes that encode item identifiers. When users scan these codes with
 
 You can use any QR code generator to create codes for your items. The codes should contain simple text identifiers (e.g., "ITEM001", "TABLE-5", "PRODUCT-ABC").
 
-### Security Notes
+## Security Notes
 
 - UUID format validation prevents malformed requests
 - Configuration file path validation prevents directory traversal
@@ -315,24 +223,13 @@ You can use any QR code generator to create codes for your items. The codes shou
 - All user input is escaped with `htmlspecialchars()` to prevent XSS
 - The `ratings.yaml` and `data.yaml` files are excluded from version control (via `.gitignore`)
 
----
+## Docker Details
 
-## Choosing an Implementation
-
-- **Use Node.js/Express** if you want:
-  - Docker containerization
-  - Modern JavaScript development
-  - REST API for integration
-  - Simple in-memory storage
-
-- **Use PHP** if you want:
-  - Multiple UUID-based configurations
-  - Built-in QR code scanner
-  - Leaderboard functionality
-  - Persistent YAML storage
-  - No Docker/Node.js dependencies
-
-Both implementations can coexist in the same repository for different use cases.
+The Docker setup uses:
+- **Base Image**: PHP 8.2 with Apache
+- **PHP Extensions**: YAML extension for configuration handling
+- **Port**: Exposed on port 80 (mapped to 8080 on host)
+- **Volumes**: Persistent storage for `ratings.yaml` and `data.yaml`
 
 ## License
 

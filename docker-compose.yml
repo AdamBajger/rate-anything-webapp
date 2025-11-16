@@ -4,6 +4,9 @@ services:
   web:
     build: .
     ports:
-      - "3000:3000"
+      - "8080:80"
+    volumes:
+      - ./ratings.yaml:/var/www/html/ratings.yaml
+      - ./data.yaml:/var/www/html/data.yaml
     environment:
-      - PORT=3000
+      - TZ=UTC
