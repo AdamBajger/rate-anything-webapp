@@ -12,13 +12,7 @@ rating:
     5: "Excellent"
 
 # Identifier parsing configuration
-# Regex to extract human-readable name from identifier
-# Example: "item-001-coffee-machine" -> "Coffee Machine"
+# Regex to extract name from identifier (first captured group is used)
+# Example: "item-001-coffee-machine" with regex "^[a-z]+-\\d+-(.*?)$" extracts "coffee-machine"
 identifier:
-  # Pattern to match the identifier structure
   regex: "^[a-z]+-\\d+-(.*?)$"
-  # Replacement pattern for human-readable format
-  # Group 1 from regex will be used and formatted
-  format: "title_case"  # Options: title_case, upper_case, lower_case, as_is
-  # Character to replace dashes/underscores with
-  separator: " "

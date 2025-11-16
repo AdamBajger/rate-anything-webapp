@@ -86,52 +86,30 @@ function saveYaml($filename, $data) {
 }
 
 /**
- * Parse identifier to human-readable format
+ * Parse identifier using regex to extract name
  * 
- * Converts machine-readable identifiers to human-friendly display names
- * using configuration rules from config.yaml.
+ * Extracts the first captured group from the identifier using regex pattern.
+ * Returns error if no match is found.
  * 
- * Example transformations:
- * - "item-001-coffee-machine" -> "Coffee Machine"
- * - "device-abc-water-cooler" -> "Water Cooler"
+ * Example: "item-001-coffee-machine" -> "coffee-machine" (with default regex)
  * 
  * @param string $identifier Raw item identifier
  * @param array $config Configuration array with identifier parsing rules
- * @return string Formatted human-readable name
+ * @return string Extracted name from identifier
  */
 function parseIdentifier($identifier, $config) {
     $regex = $config['identifier']['regex'] ?? '^[a-z]+-\\d+-(.*?)$';
-    $format = $config['identifier']['format'] ?? 'title_case';
-    $separator = $config['identifier']['separator'] ?? ' ';
     
-    // Extract meaningful part using regex pattern
+    // Extract first captured group using regex pattern
     if (preg_match('/' . $regex . '/i', $identifier, $matches)) {
-        $name = $matches[1] ?? $identifier;
-    } else {
-        $name = $identifier;
+        if (isset($matches[1]) && $matches[1] !== '') {
+            return $matches[1];
+        }
     }
     
-    // Replace dashes and underscores with configured separator
-    $name = str_replace(['-', '_'], $separator, $name);
-    
-    // Apply formatting transformation
-    switch ($format) {
-        case 'title_case':
-            $name = ucwords(strtolower($name));
-            break;
-        case 'upper_case':
-            $name = strtoupper($name);
-            break;
-        case 'lower_case':
-            $name = strtolower($name);
-            break;
-        case 'as_is':
-        default:
-            // Keep original formatting
-            break;
-    }
-    
-    return $name;
+    // Error: no match found
+    error_log("ERROR: Identifier '$identifier' does not match regex pattern '$regex'");
+    return 'ERROR: Invalid identifier format';
 }
 
 /**

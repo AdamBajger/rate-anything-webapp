@@ -111,18 +111,6 @@ docker run -d -p 8080:80 \
   --name rate-app rate-anything-webapp
 ```
 
-### Docker Compose
-
-Alternatively, use docker-compose for easier management:
-```bash
-docker-compose up -d
-```
-
-Stop the application:
-```bash
-docker-compose down
-```
-
 ## Manual Installation (Development Only)
 
 For local development without Docker:
@@ -159,7 +147,7 @@ For local development without Docker:
 Item identifiers should follow the pattern configured in `config.yaml`. Default pattern:
 - Format: `item-XXX-descriptive-name`
 - Example: `item-001-coffee-machine`
-- The application automatically extracts and formats the descriptive name
+- The application extracts the descriptive part using regex (e.g., "coffee-machine")
 
 ## Configuration
 
@@ -181,12 +169,8 @@ rating:
 
 # Identifier parsing configuration
 identifier:
-  # Regular expression to extract human-readable part
+  # Regular expression to extract name (first captured group)
   regex: "^[a-z]+-\\d+-(.*?)$"
-  # Formatting options: title_case, upper_case, lower_case, as_is
-  format: "title_case"
-  # Character to replace dashes/underscores
-  separator: " "
 ```
 
 ### Customizing Rating Scale
@@ -198,10 +182,10 @@ Edit the `rating` section in `config.yaml`:
 
 ### Customizing Identifier Parsing
 
-Edit the `identifier` section to control how item identifiers are displayed:
-- `regex`: Pattern to extract the descriptive part from identifiers
-- `format`: How to format the extracted text (title_case, upper_case, lower_case, as_is)
-- `separator`: Character to replace dashes and underscores with
+Edit the `identifier` section to control how item identifiers are parsed:
+- `regex`: Pattern to extract the name from identifiers (first captured group is used)
+
+Example: With regex `^[a-z]+-\\d+-(.*?)$`, the identifier "item-001-coffee-machine" extracts "coffee-machine"
 
 ## Data Storage
 
@@ -280,7 +264,6 @@ rate-anything-webapp/
 ├── config.yaml         # Application configuration
 ├── data.yaml           # Persistent rating storage (auto-generated)
 ├── Dockerfile          # Docker container definition
-├── docker-compose.yml  # Docker Compose configuration
 ├── .dockerignore       # Docker build exclusions
 ├── .gitignore          # Git exclusions
 └── README.md           # This documentation
