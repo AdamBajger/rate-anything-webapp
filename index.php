@@ -62,7 +62,7 @@ if (isset($data['items']) && is_array($data['items'])) {
             <form id="rating-form" action="submit.php" method="POST">
                 <div class="form-group">
                     <label for="identifier">Select Item:</label>
-                    <select name="identifier" id="identifier" required>
+                    <select name="identifier" id="identifier">
                         <option value="">-- Choose an item --</option>
                         <?php foreach ($trackedItems as $id => $name): ?>
                             <option value="<?php echo htmlspecialchars($id); ?>">
@@ -171,6 +171,17 @@ if (isset($data['items']) && is_array($data['items'])) {
         document.getElementById('identifier').addEventListener('change', function() {
             if (this.value) {
                 document.getElementById('manual-identifier').value = '';
+            }
+        });
+
+        // Ensure at least one identifier is provided before submitting
+        document.getElementById('rating-form').addEventListener('submit', function(e) {
+            const selectVal = document.getElementById('identifier').value.trim();
+            const manualVal = document.getElementById('manual-identifier').value.trim();
+            if (!selectVal && !manualVal) {
+                e.preventDefault();
+                alert('Please select an item or enter/scan an identifier before submitting.');
+                return false;
             }
         });
     </script>
