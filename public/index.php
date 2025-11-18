@@ -43,6 +43,7 @@ if (isset($data['items']) && is_array($data['items'])) {
         <div class="card">
             <h2>Or Select from Tracked Items</h2>
             <form id="rating-form" action="submit.php" method="POST">
+                <input type="hidden" id="raw-identifier" name="raw_identifier" value="">
                 <div class="form-group">
                     <label for="identifier">Select Item:</label>
                     <select name="identifier" id="identifier">
@@ -93,21 +94,39 @@ if (isset($data['items']) && is_array($data['items'])) {
         </div>
     </div>
 
-    <script>
+        <script>
         let html5QrCode;
         
         function onScanSuccess(decodedText, decodedResult) {
             console.log(`QR Code detected: ${decodedText}`);
-            
-            html5QrCode.stop().then(() => {
-                document.getElementById('manual-identifier').value = decodedText;
-                document.getElementById('identifier').value = '';
-                document.getElementById('qr-result').innerHTML = 
-                    `<span class="success">Scanned successfully: ${decodedText}</span>`;
-                document.getElementById('rating-form').scrollIntoView({ behavior: 'smooth' });
-            }).catch((err) => {
-                console.error('Failed to stop scanning:', err);
-            });
+
+            // Parse the scanned identifier on the server to get the canonical value
+            fetch('parse.php?identifier=' + encodeURIComponent(decodedText))
+                .then(resp => resp.json())
+                .then(data => {
+                    const parsed = data.parsed ?? decodedText;
+                    html5QrCode.stop().then(() => {
+                        // Set parsed value into manual input and store raw identifier in a hidden field
+                        document.getElementById('manual-identifier').value = parsed;
+                        document.getElementById('raw-identifier').value = decodedText;
+                        document.getElementById('identifier').value = '';
+                        document.getElementById('qr-result').innerHTML = 
+                            `<span class="success">Scanned successfully: ${parsed}</span>`;
+                        document.getElementById('rating-form').scrollIntoView({ behavior: 'smooth' });
+                    }).catch((err) => {
+                        console.error('Failed to stop scanning:', err);
+                    });
+                }).catch(err => {
+                    console.error('Parsing failed, using raw value:', err);
+                    html5QrCode.stop().then(() => {
+                        document.getElementById('manual-identifier').value = decodedText;
+                        document.getElementById('raw-identifier').value = '';
+                        document.getElementById('identifier').value = '';
+                        document.getElementById('qr-result').innerHTML = 
+                            `<span class="success">Scanned successfully: ${decodedText}</span>`;
+                        document.getElementById('rating-form').scrollIntoView({ behavior: 'smooth' });
+                    });
+                });
         }
 
         function onScanFailure(error) {
@@ -138,12 +157,16 @@ if (isset($data['items']) && is_array($data['items'])) {
             if (this.value) {
                 document.getElementById('identifier').value = '';
             }
+            // If the user manually edits the field, clear any stored raw identifier
+            document.getElementById('raw-identifier').value = '';
         });
 
         document.getElementById('identifier').addEventListener('change', function() {
             if (this.value) {
                 document.getElementById('manual-identifier').value = '';
             }
+            // selecting an existing item clears any raw parsed value
+            document.getElementById('raw-identifier').value = '';
         });
 
         document.getElementById('rating-form').addEventListener('submit', function(e) {

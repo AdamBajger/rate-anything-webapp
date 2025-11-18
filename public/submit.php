@@ -16,12 +16,13 @@ if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
     exit;
 }
 
-$identifier = isset($_POST['identifier']) && $_POST['identifier'] !== '' 
-    ? $_POST['identifier'] 
-    : ($_POST['manual_identifier'] ?? '');
+// Determine which identifier to use
+$selected = $_POST['identifier'] ?? '';
+$manual = trim($_POST['manual_identifier'] ?? '');
+$raw = trim($_POST['raw_identifier'] ?? '');
 $rating = isset($_POST['rating']) ? (int)$_POST['rating'] : null;
 
-if (empty($identifier) || $rating === null) {
+if ($rating === null || ($selected === '' && $manual === '')) {
     die('Error: Missing required fields. <a href="index.php">Go back</a>');
 }
 
@@ -32,20 +33,45 @@ if (!isset($data['items'])) {
     $data['items'] = [];
 }
 
-if (!isset($data['items'][$identifier])) {
-    $data['items'][$identifier] = [
-        'name' => parseIdentifier($identifier, $config),
-        'ratings' => []
-    ];
+// Workflow:
+// - If user selected existing item, use that key as-is.
+// - If user provided manual input and a raw_identifier is present (came from QR parse),
+//   treat the manual value as the canonical key and store the raw original under 'source'.
+// - If user manually typed an identifier (no raw), use it as-is.
+if ($selected !== '') {
+    $key = $selected;
+    $displayName = $data['items'][$key]['name'] ?? $key;
+} else {
+    // manual provided
+    $key = $manual;
+    $displayName = $manual;
+    if ($raw !== '') {
+        // keep the original raw value as metadata
+        $sourceValue = $raw;
+    } else {
+        $sourceValue = null;
+    }
 }
 
-$data['items'][$identifier]['ratings'][] = [
+// Initialize item if missing
+if (!isset($data['items'][$key])) {
+    $item = [
+        'name' => $displayName,
+        'ratings' => []
+    ];
+    if (!empty($sourceValue)) {
+        $item['source'] = $sourceValue;
+    }
+    $data['items'][$key] = $item;
+}
+
+$data['items'][$key]['ratings'][] = [
     'rating' => $rating,
     'timestamp' => date('Y-m-d H:i:s')
 ];
 
 if (saveYaml(__DIR__ . '/../data.yaml', $data)) {
-    header('Location: leaderboard.php?success=1&identifier=' . urlencode($identifier));
+    header('Location: leaderboard.php?success=1&identifier=' . urlencode($key));
     exit;
 } else {
     die('Error: Failed to save rating. <a href="index.php">Go back</a>');
