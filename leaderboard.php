@@ -119,6 +119,7 @@ foreach ($leaderboard as $item) {
 
         <div class="form-actions">
             <a href="index.php" class="btn btn-primary">Rate Another Item</a>
+            <a href="download.php" class="btn btn-secondary">Download Data</a>
         </div>
     </div>
 </body>
