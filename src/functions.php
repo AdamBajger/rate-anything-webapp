@@ -64,11 +64,22 @@ function parseIdentifier($identifier, $config) {
                 $final_name_parts[] = $matches[$group_index];
             }  
         }
-        return implode(' ', $final_name_parts);
+        $raw = implode(' ', $final_name_parts);
+        // Normalize delimiters (dashes, underscores, slashes) into spaces
+        $normalized = preg_replace('/[-_\/]+/', ' ', $raw);
+        // Collapse multiple spaces and trim
+        $normalized = preg_replace('/\s+/', ' ', trim($normalized));
+        // Title-case for nicer display
+        $normalized = ucwords(mb_strtolower($normalized));
+
+        return $normalized;
     }
     
     error_log("ERROR: Identifier '$identifier' does not match regex pattern '$regex'");
-    return substr($identifier, 0, 20);
+    // If no regex match, try to normalize the raw identifier itself
+    $fallback = preg_replace('/[-_\/]+/', ' ', $identifier);
+    $fallback = preg_replace('/\s+/', ' ', trim($fallback));
+    return ucwords(mb_strtolower($fallback));
 }
 
 function calculateStats($ratings) {
