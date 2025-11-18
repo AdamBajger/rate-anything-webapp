@@ -1,31 +1,18 @@
 <?php
-/**
- * Data Download Handler
- * 
- * Provides an endpoint to download the ratings data as YAML file for backup purposes.
- * This allows administrators to back up all ratings data.
- * 
- * @package RateAnything
- */
+// Public entry: download.php moved to public/
+require_once __DIR__ . '/bootstrap.php';
 
-// Load core functions
-require_once 'functions.php';
+$data = loadYaml(__DIR__ . '/../data.yaml');
 
-// Load the ratings data
-$data = loadYaml('data.yaml');
-
-// Check if data exists
 if (empty($data)) {
     die('No data available for download.');
 }
 
-// Set headers for file download
 header('Content-Type: application/x-yaml');
 header('Content-Disposition: attachment; filename="ratings-backup-' . date('Y-m-d-His') . '.yaml"');
 header('Cache-Control: no-cache, must-revalidate');
 header('Expires: 0');
 
-// Output the YAML content
 if (function_exists('yaml_emit')) {
     echo yaml_emit($data);
 } else {

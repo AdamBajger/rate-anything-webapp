@@ -1,36 +1,19 @@
 <?php
-/**
- * Main Rating Interface
- * 
- * This page provides the primary interface for submitting ratings.
- * Features:
- * - QR code scanner for automatic identifier capture
- * - Dropdown selection of previously rated items
- * - Manual identifier entry
- * - Rating scale based on configuration
- * 
- * @package RateAnything
- */
-
-// Set CORS headers for cross-origin requests
+// Public entry: index.php moved to public/
 header('Access-Control-Allow-Origin: *');
 header('Access-Control-Allow-Methods: GET, POST, OPTIONS');
 header('Access-Control-Allow-Headers: Content-Type');
 
-// Handle preflight requests
 if ($_SERVER['REQUEST_METHOD'] === 'OPTIONS') {
     http_response_code(200);
     exit;
 }
 
-// Load core functions
-require_once 'functions.php';
+require_once __DIR__ . '/bootstrap.php';
 
-// Load application configuration and existing data
-$config = loadYaml('config.yaml');
-$data = loadYaml('data.yaml');
+$config = loadYaml(__DIR__ . '/../config.yaml');
+$data = loadYaml(__DIR__ . '/../data.yaml');
 
-// Build list of previously tracked items for dropdown selection
 $trackedItems = [];
 if (isset($data['items']) && is_array($data['items'])) {
     foreach ($data['items'] as $identifier => $itemData) {
@@ -116,17 +99,11 @@ if (isset($data['items']) && is_array($data['items'])) {
         function onScanSuccess(decodedText, decodedResult) {
             console.log(`QR Code detected: ${decodedText}`);
             
-            // Stop scanning
             html5QrCode.stop().then(() => {
-                // Set the scanned value as identifier
                 document.getElementById('manual-identifier').value = decodedText;
                 document.getElementById('identifier').value = '';
-                
-                // Show success message
                 document.getElementById('qr-result').innerHTML = 
                     `<span class="success">Scanned successfully: ${decodedText}</span>`;
-                
-                // Scroll to rating form
                 document.getElementById('rating-form').scrollIntoView({ behavior: 'smooth' });
             }).catch((err) => {
                 console.error('Failed to stop scanning:', err);
@@ -134,10 +111,8 @@ if (isset($data['items']) && is_array($data['items'])) {
         }
 
         function onScanFailure(error) {
-            // Handle scan failure silently
         }
 
-        // Initialize QR Code scanner
         document.addEventListener('DOMContentLoaded', function() {
             html5QrCode = new Html5Qrcode("qr-reader");
             
@@ -147,7 +122,6 @@ if (isset($data['items']) && is_array($data['items'])) {
                 aspectRatio: 1.0
             };
             
-            // Start scanning
             html5QrCode.start(
                 { facingMode: "environment" },
                 config,
@@ -160,21 +134,18 @@ if (isset($data['items']) && is_array($data['items'])) {
             });
         });
 
-        // Clear identifier dropdown when manual entry is used
         document.getElementById('manual-identifier').addEventListener('input', function() {
             if (this.value) {
                 document.getElementById('identifier').value = '';
             }
         });
 
-        // Clear manual entry when dropdown is used
         document.getElementById('identifier').addEventListener('change', function() {
             if (this.value) {
                 document.getElementById('manual-identifier').value = '';
             }
         });
 
-        // Ensure at least one identifier is provided before submitting
         document.getElementById('rating-form').addEventListener('submit', function(e) {
             const selectVal = document.getElementById('identifier').value.trim();
             const manualVal = document.getElementById('manual-identifier').value.trim();

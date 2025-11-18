@@ -8,14 +8,12 @@ This application enables users to scan QR codes or manually select items to rate
 
 ## Architecture
 
-The application consists of:
-- **index.php**: Main rating interface with QR code scanner and rating form
-- **submit.php**: Backend handler for processing and storing ratings
-- **leaderboard.php**: Display interface for ratings statistics and rankings
-- **functions.php**: Core utility functions for data persistence and processing
-- **style.css**: Responsive stylesheet with gradient design
-- **config.yaml**: Application configuration (rating scale, identifier parsing rules)
-- **data.yaml**: Persistent storage for all ratings (auto-generated)
+The application follows a small, opinionated structure to separate public assets from application logic:
+- `public/`: webroot — contains entry points and static assets served by the webserver (e.g. `index.php`, `leaderboard.php`, `submit.php`, `download.php`, `style.css`).
+- `src/`: application code — PHP helpers, functions and business logic (not directly web-accessible).
+- `config.yaml` and `data.yaml`: configuration and persistent YAML storage at the project root.
+
+Benefits: clearer security boundary (only `public/` is served), easier bind-mounting for development, and simpler Docker image builds.
 
 ## Key Features
 
@@ -110,6 +108,34 @@ docker run -d -p 8080:80 \
   -v $(pwd)/data.yaml:/var/www/html/data.yaml \
   --name rate-app rate-anything-webapp
 ```
+
+### Development (bind mounts)
+
+For active development you should bind-mount the `public/` and `src/` directories (and config/data) so edits are reflected immediately without rebuilding the image.
+
+POSIX / Git Bash / macOS / Linux:
+```bash
+docker run -d -p 8080:80 \
+  -v $(pwd)/public:/var/www/html/public:rw \
+  -v $(pwd)/src:/var/www/html/src:rw \
+  -v $(pwd)/config.yaml:/var/www/html/config.yaml:rw \
+  -v $(pwd)/data.yaml:/var/www/html/data.yaml:rw \
+  --name rate-app rate-anything-webapp
+```
+
+PowerShell on Windows (replace the drive/path as needed):
+```powershell
+docker run -d -p 8080:80 --rm --name rate-app `
+  -v "public:/var/www/html/public:rw" `
+  -v "src:/var/www/html/src:rw" `
+  -v "config.yaml:/var/www/html/config.yaml:rw" `
+  -v "data.yaml:/var/www/html/data.yaml:rw" `
+  rate-anything-webapp
+```
+
+Notes:
+- Mounting `public/` and `src/` lets you edit frontend and PHP logic live.
+- Optionally mount `nginx/` read-only to tweak server config, but you will need to reload or restart the container to apply nginx changes.
 
 ## Manual Installation (Development Only)
 

@@ -1,44 +1,22 @@
 <?php
-/**
- * Leaderboard and Statistics Display
- * 
- * Displays comprehensive statistics and rankings for all rated items.
- * Features:
- * - Overall statistics (total items, total ratings, average)
- * - Ranked leaderboard sorted by average rating
- * - Detailed rating distributions per item
- * - Recent rating history
- * 
- * Query parameters:
- * - success: Set to 1 to show success message after rating submission
- * - identifier: Identifier of newly rated item to highlight
- * 
- * @package RateAnything
- */
-
-// Set CORS headers for cross-origin requests
+// Public entry: leaderboard.php moved to public/
 header('Access-Control-Allow-Origin: *');
 header('Access-Control-Allow-Methods: GET, OPTIONS');
 header('Access-Control-Allow-Headers: Content-Type');
 
-// Handle preflight requests
 if ($_SERVER['REQUEST_METHOD'] === 'OPTIONS') {
     http_response_code(200);
     exit;
 }
 
-// Load core functions
-require_once 'functions.php';
+require_once __DIR__ . '/bootstrap.php';
 
-// Load application configuration and rating data
-$config = loadYaml('config.yaml');
-$data = loadYaml('data.yaml');
+$config = loadYaml(__DIR__ . '/../config.yaml');
+$data = loadYaml(__DIR__ . '/../data.yaml');
 
-// Check for success message parameters from rating submission
 $success = isset($_GET['success']) && $_GET['success'] == '1';
 $submittedIdentifier = $_GET['identifier'] ?? null;
 
-// Build leaderboard data with calculated statistics
 $leaderboard = [];
 if (isset($data['items']) && is_array($data['items'])) {
     foreach ($data['items'] as $identifier => $itemData) {
@@ -52,8 +30,6 @@ if (isset($data['items']) && is_array($data['items'])) {
     }
 }
 
-// Sort leaderboard by average rating (descending)
-// Secondary sort by count for items with equal averages
 usort($leaderboard, function($a, $b) {
     if ($a['stats']['average'] === $b['stats']['average']) {
         return $b['stats']['count'] - $a['stats']['count'];
@@ -61,7 +37,6 @@ usort($leaderboard, function($a, $b) {
     return $b['stats']['average'] <=> $a['stats']['average'];
 });
 
-// Calculate overall statistics across all items
 $totalRatings = 0;
 $totalItems = count($leaderboard);
 foreach ($leaderboard as $item) {
