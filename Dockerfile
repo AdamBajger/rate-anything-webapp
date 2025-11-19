@@ -18,12 +18,15 @@ RUN set -eux; mkdir -p /run/nginx
 # files containing `server {}` blocks are included inside the `http` context.
 COPY nginx/nginx.conf /etc/nginx/nginx.conf
 COPY nginx/fastcgi_params /etc/nginx/fastcgi_params
+COPY nginx/default.conf /etc/nginx/conf.d/default.conf
 
 WORKDIR /var/www/html
 
-# Copy application and nginx configs from the build context
-COPY . /var/www/html/
-COPY nginx/default.conf /etc/nginx/conf.d/default.conf
+# Copy only the public and src directories and app config/data into the image.
+# This keeps the image layout explicit and makes the webroot `public/` clear.
+COPY public /var/www/html/public
+COPY src /var/www/html/src
+COPY config.yaml data.yaml /var/www/html/
 
 RUN adduser -S www-data; \
     chown -R www-data:www-data /var/www/html
