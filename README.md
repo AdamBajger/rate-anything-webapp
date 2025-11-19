@@ -126,11 +126,11 @@ docker run -d -p 8080:80 \
 PowerShell on Windows (replace the drive/path as needed):
 ```powershell
 docker run -d -p 8080:80 --rm --name rate-app `
-  -v "public:/var/www/html/public:rw" `
-  -v "src:/var/www/html/src:rw" `
-  -v "config.yaml:/var/www/html/config.yaml:rw" `
-  -v "data.yaml:/var/www/html/data.yaml:rw" `
-  rate-anything-webapp
+  -v "${PWD}\public:/var/www/html/public:rw" `
+  -v "${PWD}\src:/var/www/html/src:rw" `
+  -v "${PWD}\config.yaml:/var/www/html/config.yaml:rw" `
+  -v "${PWD}\data.yaml:/var/www/html/data.yaml:rw" `
+  adambajger/rate-anything-webapp:1.0.0
 ```
 
 Notes:
