@@ -5,11 +5,9 @@ rating:
   min: 1
   max: 5
   labels:
-    1: "Poor"
-    2: "Fair"
-    3: "Good"
-    4: "Very Good"
-    5: "Excellent"
+    -1: "Awful"
+    0: "Not good nor bad"
+    1: "Excellent"
 
 # Identifier parsing configuration
 # Regex to extract name from identifier (first captured group is used)

@@ -89,6 +89,8 @@ if (isset($data['items']) && is_array($data['items'])) {
 
         <script>
         let html5QrCode;
+        // Rating labels from server config (key => label)
+        window.RATING_LABELS = <?php echo json_encode($config['rating']['labels'] ?? []); ?>;
         
         function onScanSuccess(decodedText, decodedResult) {
             console.log(`QR Code detected: ${decodedText}`);
@@ -182,9 +184,17 @@ if (isset($data['items']) && is_array($data['items'])) {
             const valueEl = el.querySelector('.value');
             const input = document.getElementById('rating');
 
-            const min = Number(<?php echo json_encode($config['rating']['min'] ?? 1); ?>);
-            const max = Number(<?php echo json_encode($config['rating']['max'] ?? 5); ?>);
+            // default min/max from server config
+            let min = Number(<?php echo json_encode($config['rating']['min'] ?? 1); ?>);
+            let max = Number(<?php echo json_encode($config['rating']['max'] ?? 5); ?>);
             const step = 0.1; // floating precision
+            // if labels are provided, derive bounds from first/last numeric label keys
+            const cfgLabels = window.RATING_LABELS || {};
+            const labelKeys = Object.keys(cfgLabels).map(k => Number(k)).filter(n => !isNaN(n)).sort((a,b)=>a-b);
+            if (labelKeys.length > 0) {
+                min = labelKeys[0];
+                max = labelKeys[labelKeys.length - 1];
+            }
 
             function setByRatio(ratio) {
                 ratio = Math.max(0, Math.min(1, ratio));
@@ -253,6 +263,14 @@ if (isset($data['items']) && is_array($data['items'])) {
             });
             // position initially and on resize
             positionLabelButtons();
+            // adjust tick mark spacing to match number of labels (if any)
+            const ticksEl = track.querySelector('.ticks');
+            if (labelButtons.length > 1) {
+                const stepPct = 100 / (labelButtons.length - 1);
+                ticksEl.style.backgroundSize = stepPct + '% 100%';
+            } else {
+                ticksEl.style.backgroundSize = '100% 100%';
+            }
             window.addEventListener('resize', function(){ positionLabelButtons(); });
 
             // keyboard accessibility: left/right to change
