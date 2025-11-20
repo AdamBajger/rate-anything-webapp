@@ -97,5 +97,7 @@ foreach ($leaderboard as $item) {
             <a href="download.php" class="btn btn-secondary">Download Data</a>
         </div>
     </div>
+    
+    
 </body>
 </html>
