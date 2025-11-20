@@ -10,8 +10,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'OPTIONS') {
 
 require_once __DIR__ . '/bootstrap.php';
 
-$config = loadYaml(__DIR__ . '/../config.yaml');
-$data = loadYaml(__DIR__ . '/../data.yaml');
+$config = loadYaml(config_file());
+$data = loadYaml(data_file());
 
 // Prepare rating bounds and labels for static rendering
 $labels = $config['rating']['labels'] ?? [];
@@ -56,6 +56,7 @@ if (isset($data['items']) && is_array($data['items'])) {
 
             <h2>Or Select from Tracked Items</h2>
                 <input type="hidden" id="raw-identifier" name="raw_identifier" value="">
+                    <input type="hidden" name="instance" value="<?php echo htmlspecialchars(get_instance_id()); ?>">
                 <div class="form-group">
                     <label for="identifier">Select Item:</label>
                     <select name="identifier" id="identifier">
@@ -93,7 +94,7 @@ if (isset($data['items']) && is_array($data['items'])) {
 
                 <div class="form-actions">
                     <button type="submit" class="btn btn-primary">Submit Rating</button>
-                    <a href="leaderboard.php" class="btn btn-secondary">View Leaderboard</a>
+                    <a href="leaderboard.php?<?php echo instance_query(); ?>" class="btn btn-secondary">View Leaderboard</a>
                 </div>
             </div>
         </div>

@@ -10,7 +10,7 @@ if ($identifier === '') {
     exit;
 }
 
-$config = loadYaml(__DIR__ . '/../config.yaml');
+$config = loadYaml(config_file());
 $parsed = parseIdentifier($identifier, $config);
 
 echo json_encode(['parsed' => $parsed]);

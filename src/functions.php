@@ -16,24 +16,16 @@
  */
 
 function loadYaml($filename) {
-    if (!file_exists($filename)) {
-        return [];
-    }
-    
-    $content = file_get_contents($filename);
-    
-    if (!function_exists('yaml_parse')) {
+    if (!file_exists($filename)) return [];
+    if (!function_exists('yaml_parse_file')) {
         error_log('ERROR: PHP YAML extension is required but not installed. Please install via: apt-get install php-yaml or pecl install yaml');
         return [];
     }
-    
-    $result = yaml_parse($content);
-    
-    if ($result === false) {
+    $result = @yaml_parse_file($filename);
+    if ($result === false || $result === null) {
         error_log("ERROR: Failed to parse YAML file: $filename");
         return [];
     }
-    
     return $result;
 }
 

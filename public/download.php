@@ -1,8 +1,9 @@
 <?php
 // Public entry: download.php moved to public/
+
 require_once __DIR__ . '/bootstrap.php';
 
-$data = loadYaml(__DIR__ . '/../data.yaml');
+$data = loadYaml(data_file());
 
 if (empty($data)) {
     die('No data available for download.');

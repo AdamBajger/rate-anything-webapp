@@ -11,8 +11,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'OPTIONS') {
 
 require_once __DIR__ . '/bootstrap.php';
 
-$config = loadYaml(__DIR__ . '/../config.yaml');
-$data = loadYaml(__DIR__ . '/../data.yaml');
+$config = loadYaml(config_file());
+$data = loadYaml(data_file());
 
 $success = isset($_GET['success']) && $_GET['success'] == '1';
 $submittedIdentifier = $_GET['identifier'] ?? null;
@@ -72,18 +72,50 @@ foreach ($leaderboard as $item) {
             <div class="card">
                 <h2>Rankings</h2>
                 <table>
-                    <thead>
-                        <tr>
-                            <th>Rank</th>
-                            <th>Identifier</th>
-                            <th>Average Rating</th>
-                        </tr>
-                    </thead>
+                                        <thead>
+                                            <tr>
+                                                <th>Rank</th>
+                                                <th>Identifier</th>
+                                                <th>Popularity</th>
+                                                <th>Average Rating</th>
+                                            </tr>
+                                        </thead>
                     <tbody>
-                        <?php foreach ($leaderboard as $index => $item): ?>
+                        <?php
+                        // Determine rating bounds from config
+                        $labels = $config['rating']['labels'] ?? [];
+                        $labelKeys = [];
+                        if (!empty($labels) && is_array($labels)) {
+                            $labelKeys = array_map('intval', array_keys($labels));
+                            sort($labelKeys);
+                            $ratingMin = $labelKeys[0];
+                            $ratingMax = $labelKeys[count($labelKeys)-1];
+                        } else {
+                            $ratingMin = $config['rating']['min'] ?? 1;
+                            $ratingMax = $config['rating']['max'] ?? 5;
+                        }
+
+                        foreach ($leaderboard as $index => $item):
+                            // fraction between 0 and 1 relative to configured range
+                            $avg = $item['stats']['average'] ?? 0;
+                            $range = max(1, ($ratingMax - $ratingMin));
+                            $fraction = ($avg - $ratingMin) / $range;
+                            if ($fraction < 0) $fraction = 0;
+                            if ($fraction > 1) $fraction = 1;
+                            $percent = round($fraction * 100, 2);
+                        ?>
                             <tr>
                                 <td><?php echo $index + 1; ?></td>
                                 <td><?php echo htmlspecialchars($item['identifier']); ?></td>
+                                <td>
+                                    <div class="stars-wrapper" title="Average <?php echo htmlspecialchars($avg); ?>">
+                                        <div class="stars" aria-hidden="true">
+                                            <div class="stars-top" style="width: <?php echo $percent; ?>%"><span>★★★★★</span></div>
+                                            <div class="stars-bottom"><span>★★★★★</span></div>
+                                        </div>
+                                        <div class="stars-small"><?php echo $item['stats']['count']; ?></div>
+                                    </div>
+                                </td>
                                 <td><?php echo $item['stats']['average']; ?></td>
                             </tr>
                         <?php endforeach; ?>
@@ -93,8 +125,8 @@ foreach ($leaderboard as $item) {
         <?php endif; ?>
 
         <div class="form-actions">
-            <a href="index.php" class="btn btn-primary">Rate Another Item</a>
-            <a href="download.php" class="btn btn-secondary">Download Data</a>
+            <a href="index.php?<?php echo instance_query(); ?>" class="btn btn-primary">Rate Another Item</a>
+            <a href="download.php?<?php echo instance_query(); ?>" class="btn btn-secondary">Download Data</a>
         </div>
     </div>
     

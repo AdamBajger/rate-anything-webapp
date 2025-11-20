@@ -20,14 +20,15 @@ if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
 $selected = $_POST['identifier'] ?? '';
 $manual = trim($_POST['manual_identifier'] ?? '');
 $raw = trim($_POST['raw_identifier'] ?? '');
-$rating = isset($_POST['rating']) ? (int)$_POST['rating'] : null;
+// Preserve fractional values from the slider: use float conversion
+$rating = isset($_POST['rating']) ? floatval($_POST['rating']) : null;
 
 if ($rating === null || ($selected === '' && $manual === '')) {
     die('Error: Missing required fields. <a href="index.php">Go back</a>');
 }
 
-$config = loadYaml(__DIR__ . '/../config.yaml');
-$data = loadYaml(__DIR__ . '/../data.yaml');
+$config = loadYaml(config_file());
+$data = loadYaml(data_file());
 
 if (!isset($data['items'])) {
     $data['items'] = [];
@@ -66,12 +67,15 @@ if (!isset($data['items'][$key])) {
 }
 
 $data['items'][$key]['ratings'][] = [
-    'rating' => $rating,
+    'rating' => $rating + 0.0,
     'timestamp' => date('Y-m-d H:i:s')
 ];
 
-if (saveYaml(__DIR__ . '/../data.yaml', $data)) {
-    header('Location: leaderboard.php?success=1&identifier=' . urlencode($key));
+if (saveYaml(data_file(), $data)) {
+    $qs = 'success=1&identifier=' . urlencode($key);
+    $__iq = instance_query();
+    if ($__iq) $qs .= '&' . $__iq;
+    header('Location: leaderboard.php?' . $qs);
     exit;
 } else {
     die('Error: Failed to save rating. <a href="index.php">Go back</a>');

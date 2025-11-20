@@ -119,6 +119,14 @@ th,td{padding:12px;text-align:left}
 tbody tr{border-bottom:1px solid #eee}
 tbody tr:hover{background:#f8f9ff}
 
+/* Star rating widget (layered) */
+.stars{position:relative;display:inline-block;font-size:1.1rem;line-height:1;color:#d0d0d0}
+.stars span{letter-spacing:3px}
+.stars-top{position:absolute;top:0;left:0;overflow:hidden;white-space:nowrap;color:#ffca28}
+.stars-bottom{color:#d0d0d0;white-space:nowrap}
+.stars-wrapper{display:inline-flex;align-items:center;gap:8px}
+.stars-small{font-size:0.95rem;color:#666}
+
 /* Responsive tweaks */
 @media(max-width:720px){h1{font-size:1.6rem}.card{padding:16px}.form-actions{flex-direction:column}.rating-labels-row{flex-wrap:wrap;gap:8px}.slider-label{max-width:100%}}
 
