@@ -10,8 +10,12 @@ if ($_SERVER['REQUEST_METHOD'] === 'OPTIONS') {
 
 require_once __DIR__ . '/bootstrap.php';
 
-$config = loadYaml(config_file());
-$data = loadYaml(data_file());
+$instance_id = get_instance_id();
+error_log('DEBUG: Serving index.php for instance: ' . $instance_id);
+$config = loadYaml(config_file($instance_id));
+error_log('DEBUG: Loaded config: ' . print_r($config, true));
+$data = loadYaml(data_file($instance_id));
+error_log('DEBUG: Loaded data: ' . print_r($data, true));
 
 // Prepare rating bounds and labels for static rendering
 $labels = $config['rating']['labels'] ?? [];
@@ -30,7 +34,7 @@ $ratingStep = ($ratingMax - $ratingMin) / 20;
 $trackedItems = [];
 if (isset($data['items']) && is_array($data['items'])) {
     foreach ($data['items'] as $identifier => $itemData) {
-        $trackedItems[$identifier] = $itemData['name'] ?? parseIdentifier($identifier, $config);
+        $trackedItems[$identifier] = $itemData['name'];
     }
 }
 ?>
@@ -58,8 +62,8 @@ if (isset($data['items']) && is_array($data['items'])) {
                 <input type="hidden" id="raw-identifier" name="raw_identifier" value="">
                     <input type="hidden" name="instance" value="<?php echo htmlspecialchars(get_instance_id()); ?>">
                 <div class="form-group">
-                    <label for="identifier">Select Item:</label>
-                    <select name="identifier" id="identifier">
+                    <label for="select-identifier">Select Item:</label>
+                    <select name="select_identifier" id="select-identifier">
                         <option value="">-- Choose an item --</option>
                         <?php foreach ($trackedItems as $id => $name): ?>
                             <option value="<?php echo htmlspecialchars($id); ?>">
@@ -108,15 +112,17 @@ if (isset($data['items']) && is_array($data['items'])) {
             console.log(`QR Code detected: ${decodedText}`);
 
             // Parse the scanned identifier on the server to get the canonical value
-            fetch('parse.php?identifier=' + encodeURIComponent(decodedText))
+            const parse_request = 'parse.php?' + <?php echo "'" . instance_query() . "'"; ?> + '&identifier=' + encodeURIComponent(decodedText)
+            fetch(parse_request)
                 .then(resp => resp.json())
                 .then(data => {
                     const parsed = data.parsed ?? decodedText;
+                    console.log('Parsed identifier:', parsed, 'Original:', decodedText);
                     html5QrCode.stop().then(() => {
                         // Set parsed value into manual input and store raw identifier in a hidden field
                         document.getElementById('manual-identifier').value = parsed;
                         document.getElementById('raw-identifier').value = decodedText;
-                        document.getElementById('identifier').value = '';
+                        document.getElementById('select-identifier').value = '';
                         document.getElementById('qr-result').innerHTML = 
                             `<span class="success">Scanned successfully: ${parsed}</span>`;
                         document.getElementById('rating-form').scrollIntoView({ behavior: 'smooth' });
@@ -127,8 +133,8 @@ if (isset($data['items']) && is_array($data['items'])) {
                     console.error('Parsing failed, using raw value:', err);
                     html5QrCode.stop().then(() => {
                         document.getElementById('manual-identifier').value = decodedText;
-                        document.getElementById('raw-identifier').value = '';
-                        document.getElementById('identifier').value = '';
+                        document.getElementById('raw-identifier').value = decodedText;
+                        document.getElementById('select-identifier').value = '';
                         document.getElementById('qr-result').innerHTML = 
                             `<span class="success">Scanned successfully: ${decodedText}</span>`;
                         document.getElementById('rating-form').scrollIntoView({ behavior: 'smooth' });
@@ -137,6 +143,7 @@ if (isset($data['items']) && is_array($data['items'])) {
         }
 
         function onScanFailure(error) {
+
         }
 
         document.addEventListener('DOMContentLoaded', function() {
@@ -162,13 +169,13 @@ if (isset($data['items']) && is_array($data['items'])) {
 
         document.getElementById('manual-identifier').addEventListener('input', function() {
             if (this.value) {
-                document.getElementById('identifier').value = '';
+                document.getElementById('select-identifier').value = '';
             }
             // If the user manually edits the field, clear any stored raw identifier
             document.getElementById('raw-identifier').value = '';
         });
 
-        document.getElementById('identifier').addEventListener('change', function() {
+        document.getElementById('select-identifier').addEventListener('change', function() {
             if (this.value) {
                 document.getElementById('manual-identifier').value = '';
             }
@@ -177,7 +184,7 @@ if (isset($data['items']) && is_array($data['items'])) {
         });
 
         document.getElementById('rating-form').addEventListener('submit', function(e) {
-            const selectVal = document.getElementById('identifier').value.trim();
+            const selectVal = document.getElementById('select-identifier').value.trim();
             const manualVal = document.getElementById('manual-identifier').value.trim();
             if (!selectVal && !manualVal) {
                 e.preventDefault();

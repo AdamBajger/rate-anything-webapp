@@ -10,7 +10,7 @@ if ($identifier === '') {
     exit;
 }
 
-$config = loadYaml(config_file());
+$config = loadYaml(config_file(get_instance_id()));
 $parsed = parseIdentifier($identifier, $config);
 
 echo json_encode(['parsed' => $parsed]);

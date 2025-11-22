@@ -9,18 +9,19 @@ if (!defined('APP_ROOT')) {
 // Load application functions
 require_once APP_ROOT . '/src/functions.php';
 
-// Helper functions to access the per-request instance identifier and
-// resolve config/data file paths. These avoid defining globals/constants
-// and compute the values on demand from $_REQUEST.
+// Return the requested instance identifier (may be empty string).
+// Accepts an explicit empty identifier when `instance` is present and empty.
 function get_instance_id() {
-    // If `instance` is present in the request, accept it when empty or
-    // when matching the allowlist. Otherwise, default to empty string.
     if (array_key_exists('instance', $_REQUEST)) {
         $candidate = (string)$_REQUEST['instance'];
-        if ($candidate === '') return '';
-        if (preg_match('/^[A-Za-z0-9_-]{1,32}$/', $candidate)) {
-            return $candidate;
+        if ($candidate === '') {
+            return '';
         }
+        if (preg_match('/^[A-Za-z0-9_-]{1,32}$/', $candidate)) {
+            return (string)$candidate;
+        }
+        error_log('WARNING: Invalid instance identifier received: ' . $candidate);
+        return '';
     }
     return '';
 }
@@ -29,12 +30,12 @@ function instance_query() {
     return 'instance=' . urlencode(get_instance_id());
 }
 
-function config_file() {
-    $id = get_instance_id();
-    return APP_ROOT . "/conf/" . $id . ".yaml";
+// Resolve paths for per-instance config/data files. These functions
+// explicitly accept the instance identifier as an argument as requested.
+function config_file($instance_id) {
+    return APP_ROOT . '/conf/' . $instance_id . '.yaml';
 }
 
-function data_file() {
-    $id = get_instance_id();
-    return APP_ROOT . "/data/" . $id . ".yaml";
+function data_file($instance_id) {
+    return APP_ROOT . '/data/' . $instance_id . '.yaml';
 }

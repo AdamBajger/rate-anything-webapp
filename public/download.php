@@ -3,7 +3,7 @@
 
 require_once __DIR__ . '/bootstrap.php';
 
-$data = loadYaml(data_file());
+$data = loadYaml(data_file(get_instance_id()));
 
 if (empty($data)) {
     die('No data available for download.');

@@ -46,32 +46,45 @@ function saveYaml($filename, $data) {
 }
 
 function parseIdentifier($identifier, $config) {
-    $regex = $config['identifier']['regex'];
-    $groups = $config['identifier']['groups'];
-    
-    if (preg_match('/' . $regex . '/i', $identifier, $matches)) {
-        $final_name_parts = [];
-        foreach ($groups as $group_index) {
-            if (isset($matches[$group_index])) {
-                $final_name_parts[] = $matches[$group_index];
-            }  
-        }
-        $raw = implode(' ', $final_name_parts);
-        // Normalize delimiters (dashes, underscores, slashes) into spaces
-        $normalized = preg_replace('/[-_\/]+/', ' ', $raw);
-        // Collapse multiple spaces and trim
-        $normalized = preg_replace('/\s+/', ' ', trim($normalized));
-        // Title-case for nicer display
-        $normalized = ucwords(mb_strtolower($normalized));
-
-        return $normalized;
+    error_log("Config is: " . print_r($config, true));
+    $regex = null;
+    if (isset($config['identifier']['regex'])) {
+        $regex = $config['identifier']['regex'];
     }
-    
-    error_log("ERROR: Identifier '$identifier' does not match regex pattern '$regex'");
-    // If no regex match, try to normalize the raw identifier itself
-    $fallback = preg_replace('/[-_\/]+/', ' ', $identifier);
-    $fallback = preg_replace('/\s+/', ' ', trim($fallback));
-    return ucwords(mb_strtolower($fallback));
+    $groups = [];
+    if (isset($config['identifier']['groups'])) {
+        $groups = $config['identifier']['groups'];
+        if (!is_array($groups)) {
+            $groups = [$groups];
+        }
+    }
+    error_log("Groups: " . print_r($groups, true));
+    if ($regex === null || empty($groups)) {
+        return $identifier;
+    }
+    $select_matches = [];
+    if (preg_match($regex, $identifier, $matches, PREG_UNMATCHED_AS_NULL)) {
+        $parts = [];
+        foreach ($groups as $g) {
+            if (isset($matches[$g]) && $matches[$g] !== null) {
+                $parts[] = $matches[$g];
+                error_log("DEBUG: Matched group $g: " . $matches[$g]);
+            }
+        }
+        if (!empty($parts)) {
+            // Combine parts into a display name
+            $name = implode(' ', $parts);
+            // Convert to title case
+            $name = ucwords(strtolower(str_replace(['-', '_'], ' ', $name)));
+            return $name;
+        }
+        // warn if no groups matched
+        error_log("WARNING: No matching groups found for identifier: $identifier");
+        return $identifier;
+    }   
+    // warn if regex did not match
+    error_log("WARNING: Regex did not match identifier: $identifier");
+    return $identifier;
 }
 
 function calculateStats($ratings) {

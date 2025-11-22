@@ -1,0 +1,14 @@
+# default, example configuration for rate-anything-webapp
+# Copy this file to conf/{instance_id}.yaml and modify as needed.
+rating:
+  min: 1
+  max: 5
+  labels:
+    1: "Poor"
+    2: "Average"
+    3: "Good"
+    4: "Very Good"
+    5: "Excellent"
+identifier:
+  regex: '/^(?:https?:\/\/)?(?:[\w\d_-.]+\/)?(.*)$/'
+  groups: [1]

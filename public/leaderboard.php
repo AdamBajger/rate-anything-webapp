@@ -11,8 +11,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'OPTIONS') {
 
 require_once __DIR__ . '/bootstrap.php';
 
-$config = loadYaml(config_file());
-$data = loadYaml(data_file());
+$config = loadYaml(config_file(get_instance_id()));
+$data = loadYaml(data_file(get_instance_id()));
 
 $success = isset($_GET['success']) && $_GET['success'] == '1';
 $submittedIdentifier = $_GET['identifier'] ?? null;

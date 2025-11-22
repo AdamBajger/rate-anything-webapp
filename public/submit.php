@@ -27,8 +27,8 @@ if ($rating === null || ($selected === '' && $manual === '')) {
     die('Error: Missing required fields. <a href="index.php">Go back</a>');
 }
 
-$config = loadYaml(config_file());
-$data = loadYaml(data_file());
+$config = loadYaml(config_file(get_instance_id()));
+$data = loadYaml(data_file(get_instance_id()));
 
 if (!isset($data['items'])) {
     $data['items'] = [];
@@ -71,7 +71,7 @@ $data['items'][$key]['ratings'][] = [
     'timestamp' => date('Y-m-d H:i:s')
 ];
 
-if (saveYaml(data_file(), $data)) {
+if (saveYaml(data_file(get_instance_id()), $data)) {
     $qs = 'success=1&identifier=' . urlencode($key);
     $__iq = instance_query();
     if ($__iq) $qs .= '&' . $__iq;

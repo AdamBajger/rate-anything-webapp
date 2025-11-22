@@ -26,7 +26,8 @@ WORKDIR /var/www/html
 # This keeps the image layout explicit and makes the webroot `public/` clear.
 COPY public /var/www/html/public
 COPY src /var/www/html/src
-COPY config.yaml data.yaml /var/www/html/
+COPY conf /var/www/html/conf
+COPY data /var/www/html/data
 
 RUN adduser -S www-data; \
     chown -R www-data:www-data /var/www/html
