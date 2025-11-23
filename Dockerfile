@@ -32,6 +32,8 @@ COPY data /var/www/html/data
 RUN adduser -S www-data; \
     chown -R www-data:www-data /var/www/html
 
-EXPOSE 80
+ENV PORT=8080
+EXPOSE 8080
 
+# Start php-fpm and nginx. Nginx is configured to listen on $PORT (8080)
 CMD ["sh","-c","php-fpm -F & nginx -g 'daemon off;'"]
