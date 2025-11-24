@@ -10,12 +10,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'OPTIONS') {
 
 require_once __DIR__ . '/bootstrap.php';
 
-$instance_id = get_instance_id();
-error_log('DEBUG: Serving index.php for instance: ' . $instance_id);
-$config = loadYaml(config_file($instance_id));
-error_log('DEBUG: Loaded config: ' . print_r($config, true));
-$data = loadYaml(data_file($instance_id));
-error_log('DEBUG: Loaded data: ' . print_r($data, true));
+ $instance_id = get_instance_id();
+ $config = loadYaml(config_file($instance_id));
+ $data = loadYaml(data_file($instance_id));
 
 // Prepare rating bounds and labels for static rendering
 $labels = $config['rating']['labels'] ?? [];
@@ -43,44 +40,48 @@ if (isset($data['items']) && is_array($data['items'])) {
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Rate Anything</title>
+    <title><?php echo htmlspecialchars($config['ui']['title'] ?? 'Rate Anything'); ?></title>
     <link rel="stylesheet" href="style.css">
     <script src="https://unpkg.com/html5-qrcode@2.3.8/html5-qrcode.min.js"></script>
 </head>
 <body>
     <div class="container">
-        <h1>Rate Anything</h1>
+        <h1><?php echo htmlspecialchars($config['ui']['title'] ?? 'Rate Anything'); ?></h1>
         
         <form id="rating-form" action="submit.php" method="POST">
         <div class="card">
-            <h2>Scan QR Code</h2>
+            <?php if (!empty($config['ui']['instructions'])): ?>
+                <p class="instructions"><?php echo htmlspecialchars($config['ui']['instructions']); ?></p>
+            <?php endif; ?>
+            <h2><?php echo htmlspecialchars(translate('choose_or_scan', $config)); ?></h2>
+
+            <h3><?php echo htmlspecialchars(translate('scan_qr', $config)); ?></h3>
             <div id="qr-reader" style="width: 100%;"></div>
             <div id="qr-result" class="result-message"></div>
-       
 
-            <h2>Or Select from Tracked Items</h2>
-                <input type="hidden" id="raw-identifier" name="raw_identifier" value="">
-                    <input type="hidden" name="instance" value="<?php echo htmlspecialchars(get_instance_id()); ?>">
+            <h3><?php echo htmlspecialchars(translate('select_tracked', $config)); ?></h3>
+            <input type="hidden" name="instance" value="<?php echo htmlspecialchars(get_instance_id()); ?>">
+
                 <div class="form-group">
-                    <label for="select-identifier">Select Item:</label>
-                    <select name="select_identifier" id="select-identifier">
-                        <option value="">-- Choose an item --</option>
-                        <?php foreach ($trackedItems as $id => $name): ?>
-                            <option value="<?php echo htmlspecialchars($id); ?>">
-                                <?php echo htmlspecialchars($name); ?>
-                            </option>
+                    <label for="parsed-select"><?php echo htmlspecialchars(translate('select_item_label', $config)); ?></label>
+                    <select id="parsed-select">
+                        <option value=""><?php echo htmlspecialchars(translate('choose_item_placeholder', $config)); ?></option>
+                        <?php foreach ($trackedItems as $rawId => $name): ?>
+                            <?php $parsed = htmlspecialchars(parseIdentifier($rawId, $config)); ?>
+                            <option value="<?php echo htmlspecialchars($rawId); ?>"><?php echo $parsed; ?></option>
                         <?php endforeach; ?>
                     </select>
-                    <div class="input-group">
-                        <label for="manual-identifier">Or enter identifier manually:</label>
-                        <input type="text" id="manual-identifier" name="manual_identifier" placeholder="e.g., Peru Light Roast">
-                    </div>
                 </div>
+
+            <div class="form-group">
+                <label for="identifier"><?php echo htmlspecialchars(translate('manual_entry_label', $config)); ?></label>
+                <input type="text" id="identifier" name="identifier" placeholder="<?php echo htmlspecialchars(translate('manual_placeholder', $config)); ?>" autocomplete="off">
+            </div>
         </div>
 
         <div class="card">
                 <div class="form-group rating-slider-group">
-                    <label for="rating">Rating</label>
+                    <label for="rating"><?php echo htmlspecialchars(translate('rating_label', $config)); ?></label>
                     <div class="rating-labels-row">
                         <?php if (!empty($labelKeys)): ?>
                             <?php foreach ($labelKeys as $k): ?>
@@ -97,100 +98,116 @@ if (isset($data['items']) && is_array($data['items'])) {
                 </div>
 
                 <div class="form-actions">
-                    <button type="submit" class="btn btn-primary">Submit Rating</button>
-                    <a href="leaderboard.php?<?php echo instance_query(); ?>" class="btn btn-secondary">View Leaderboard</a>
+                    <button type="submit" class="btn btn-primary"><?php echo htmlspecialchars(translate('submit_button', $config)); ?></button>
+                    <a href="leaderboard.php?<?php echo instance_query(); ?>" class="btn btn-secondary"><?php echo htmlspecialchars(translate('view_leaderboard', $config)); ?></a>
                 </div>
             </div>
         </div>
     </form>
 
         <script>
-        let html5QrCode;
-        
-        
-        function onScanSuccess(decodedText, decodedResult) {
-            console.log(`QR Code detected: ${decodedText}`);
+        // Localized strings for client-side messages
+        const I18N = <?php echo json_encode([
+            'camera_unavailable' => translate('camera_unavailable', $config),
+            'scanned_success' => translate('scanned_success', $config),
+            'validation_select_or_manual' => translate('validation_select_or_manual', $config)
+        ]); ?>;
 
-            // Parse the scanned identifier on the server to get the canonical value
-            const parse_request = 'parse.php?' + <?php echo "'" . instance_query() . "'"; ?> + '&identifier=' + encodeURIComponent(decodedText)
-            fetch(parse_request)
-                .then(resp => resp.json())
-                .then(data => {
-                    const parsed = data.parsed ?? decodedText;
-                    console.log('Parsed identifier:', parsed, 'Original:', decodedText);
-                    html5QrCode.stop().then(() => {
-                        // Set parsed value into manual input and store raw identifier in a hidden field
-                        document.getElementById('manual-identifier').value = parsed;
-                        document.getElementById('raw-identifier').value = decodedText;
-                        document.getElementById('select-identifier').value = '';
-                        document.getElementById('qr-result').innerHTML = 
-                            `<span class="success">Scanned successfully: ${parsed}</span>`;
-                        document.getElementById('rating-form').scrollIntoView({ behavior: 'smooth' });
-                    }).catch((err) => {
-                        console.error('Failed to stop scanning:', err);
-                    });
-                }).catch(err => {
-                    console.error('Parsing failed, using raw value:', err);
-                    html5QrCode.stop().then(() => {
-                        document.getElementById('manual-identifier').value = decodedText;
-                        document.getElementById('raw-identifier').value = decodedText;
-                        document.getElementById('select-identifier').value = '';
-                        document.getElementById('qr-result').innerHTML = 
-                            `<span class="success">Scanned successfully: ${decodedText}</span>`;
-                        document.getElementById('rating-form').scrollIntoView({ behavior: 'smooth' });
-                    });
-                });
+        const INSTANCE_QS = '<?php echo instance_query(); ?>';
+
+        let html5QrCode;
+
+        function debounce(fn, wait) {
+            let t;
+            return function(...args) {
+                clearTimeout(t);
+                t = setTimeout(() => fn.apply(this, args), wait);
+            };
         }
 
-        function onScanFailure(error) {
+        function fetchParsed(raw) {
+            if (!raw) return Promise.resolve('');
+            const url = 'parse.php' + (INSTANCE_QS ? ('?' + INSTANCE_QS + '&identifier=' + encodeURIComponent(raw)) : ('?identifier=' + encodeURIComponent(raw)));
+            return fetch(url)
+                .then(r => r.json())
+                .then(data => data.parsed ?? '')
+                .catch(() => '');
+        }
 
+        function updateSelectForRaw(raw, parsed) {
+            const sel = document.getElementById('parsed-select');
+            if (!sel) return;
+            // find option with value == raw
+            let found = null;
+            for (let opt of sel.options) {
+                if (opt.value === raw) { found = opt; break; }
+            }
+            if (found) {
+                sel.value = raw;
+            } else {
+                // add a manual option
+                const opt = document.createElement('option');
+                opt.value = raw;
+                opt.text = parsed || raw;
+                opt.setAttribute('data-manual', '1');
+                sel.appendChild(opt);
+                sel.value = raw;
+            }
+        }
+
+        function handleIdentifierInput(raw) {
+            if (!raw) return;
+            fetchParsed(raw).then(parsed => {
+                updateSelectForRaw(raw, parsed || raw);
+                // show parsed in the qr-result area as feedback
+                const rr = document.getElementById('qr-result');
+                if (rr) rr.innerHTML = `<span class="success">${I18N.scanned_success}: ${parsed || raw}</span>`;
+            });
         }
 
         document.addEventListener('DOMContentLoaded', function() {
             html5QrCode = new Html5Qrcode("qr-reader");
-            
-            const config = { 
-                fps: 10, 
-                qrbox: { width: 250, height: 250 },
-                aspectRatio: 1.0
-            };
-            
-            html5QrCode.start(
-                { facingMode: "environment" },
-                config,
-                onScanSuccess,
-                onScanFailure
-            ).catch((err) => {
+
+            const qrConfig = { fps: 10, qrbox: { width: 250, height: 250 }, aspectRatio: 1.0 };
+
+            function onScanSuccess(decodedText, decodedResult) {
+                console.log('QR Code detected:', decodedText);
+                // stop scanner then process
+                html5QrCode.stop().then(() => {
+                    document.getElementById('identifier').value = decodedText;
+                    handleIdentifierInput(decodedText);
+                    document.getElementById('rating-form').scrollIntoView({ behavior: 'smooth' });
+                }).catch(err => console.error('Failed to stop scanning:', err));
+            }
+
+            function onScanFailure(error) {
+                // ignore
+            }
+
+            html5QrCode.start({ facingMode: 'environment' }, qrConfig, onScanSuccess, onScanFailure).catch((err) => {
                 console.error('Unable to start scanning:', err);
-                document.getElementById('qr-result').innerHTML = 
-                    '<span class="error">Camera not available. Please use manual entry.</span>';
+                const rr = document.getElementById('qr-result');
+                if (rr) rr.innerHTML = `<span class="error">${I18N.camera_unavailable}</span>`;
             });
-        });
 
-        document.getElementById('manual-identifier').addEventListener('input', function() {
-            if (this.value) {
-                document.getElementById('select-identifier').value = '';
-            }
-            // If the user manually edits the field, clear any stored raw identifier
-            document.getElementById('raw-identifier').value = '';
-        });
+            const idInput = document.getElementById('identifier');
+            const sel = document.getElementById('parsed-select');
+            const debouncedHandler = debounce((e) => handleIdentifierInput(e.target.value.trim()), 500);
+            if (idInput) idInput.addEventListener('input', debouncedHandler);
 
-        document.getElementById('select-identifier').addEventListener('change', function() {
-            if (this.value) {
-                document.getElementById('manual-identifier').value = '';
-            }
-            // selecting an existing item clears any raw parsed value
-            document.getElementById('raw-identifier').value = '';
-        });
+            if (sel) sel.addEventListener('change', function() {
+                const raw = sel.value || '';
+                document.getElementById('identifier').value = raw;
+            });
 
-        document.getElementById('rating-form').addEventListener('submit', function(e) {
-            const selectVal = document.getElementById('select-identifier').value.trim();
-            const manualVal = document.getElementById('manual-identifier').value.trim();
-            if (!selectVal && !manualVal) {
-                e.preventDefault();
-                alert('Please select an item or enter/scan an identifier before submitting.');
-                return false;
-            }
+            document.getElementById('rating-form').addEventListener('submit', function(e) {
+                const raw = (document.getElementById('identifier').value || '').trim();
+                if (!raw) {
+                    e.preventDefault();
+                    alert(I18N.validation_select_or_manual);
+                    return false;
+                }
+            });
         });
 
         // Minimal JS: update the big rating indicator when slider moves

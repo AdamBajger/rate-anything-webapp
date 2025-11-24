@@ -28,6 +28,7 @@ COPY public /var/www/html/public
 COPY src /var/www/html/src
 COPY conf /var/www/html/conf
 COPY data /var/www/html/data
+COPY locale /var/www/html/locale
 
 RUN adduser -S www-data; \
     chown -R www-data:www-data /var/www/html

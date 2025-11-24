@@ -14,8 +14,9 @@ require_once __DIR__ . '/bootstrap.php';
 $config = loadYaml(config_file(get_instance_id()));
 $data = loadYaml(data_file(get_instance_id()));
 
-$success = isset($_GET['success']) && $_GET['success'] == '1';
-$submittedIdentifier = $_GET['identifier'] ?? null;
+ $success = isset($_GET['success']) && $_GET['success'] == '1';
+ $submittedIdentifierRaw = $_GET['identifier'] ?? null;
+ $submittedIdentifier = null;
 
 $leaderboard = [];
 if (isset($data['items']) && is_array($data['items'])) {
@@ -27,6 +28,15 @@ if (isset($data['items']) && is_array($data['items'])) {
             'stats' => $stats,
             'ratings' => $itemData['ratings'] ?? []
         ];
+    }
+}
+
+// Resolve submitted identifier raw -> display name for the success message
+if ($submittedIdentifierRaw) {
+    if (isset($data['items'][$submittedIdentifierRaw]['name'])) {
+        $submittedIdentifier = $data['items'][$submittedIdentifierRaw]['name'];
+    } else {
+        $submittedIdentifier = parseIdentifier($submittedIdentifierRaw, $config);
     }
 }
 
@@ -48,12 +58,12 @@ foreach ($leaderboard as $item) {
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Leaderboard - Rate Anything</title>
+    <title><?php echo htmlspecialchars(translate('leaderboard', $config)) . ' - ' . htmlspecialchars($config['ui']['title'] ?? 'Rate Anything'); ?></title>
     <link rel="stylesheet" href="style.css">
 </head>
 <body>
     <div class="container">
-        <h1>Leaderboard</h1>
+        <h1><?php echo htmlspecialchars(translate('leaderboard', $config)); ?></h1>
         
         <?php if ($success): ?>
             <div class="alert alert-success">
@@ -66,7 +76,7 @@ foreach ($leaderboard as $item) {
 
         <?php if (empty($leaderboard)): ?>
             <div class="card">
-                <p>No ratings yet. <a href="index.php">Rate an item</a></p>
+                <p><?php echo htmlspecialchars(translate('no_ratings', $config)); ?> <a href="index.php"><?php echo htmlspecialchars($config['ui']['title'] ?? 'Rate an item'); ?></a></p>
             </div>
         <?php else: ?>
             <div class="card">
@@ -75,7 +85,7 @@ foreach ($leaderboard as $item) {
                                         <thead>
                                             <tr>
                                                 <th>Rank</th>
-                                                <th>Identifier</th>
+                                                <th>Item</th>
                                                 <th>Popularity</th>
                                                 <th>Average Rating</th>
                                             </tr>
@@ -104,9 +114,9 @@ foreach ($leaderboard as $item) {
                             if ($fraction > 1) $fraction = 1;
                             $percent = round($fraction * 100, 2);
                         ?>
-                            <tr>
+                                                <tr>
                                 <td><?php echo $index + 1; ?></td>
-                                <td><?php echo htmlspecialchars($item['identifier']); ?></td>
+                                <td><?php echo htmlspecialchars($item['name']); ?></td>
                                 <td>
                                     <div class="stars-wrapper" title="Average <?php echo htmlspecialchars($avg); ?>">
                                         <div class="stars" aria-hidden="true">
@@ -125,8 +135,8 @@ foreach ($leaderboard as $item) {
         <?php endif; ?>
 
         <div class="form-actions">
-            <a href="index.php?<?php echo instance_query(); ?>" class="btn btn-primary">Rate Another Item</a>
-            <a href="download.php?<?php echo instance_query(); ?>" class="btn btn-secondary">Download Data</a>
+            <a href="index.php?<?php echo instance_query(); ?>" class="btn btn-primary"><?php echo htmlspecialchars(translate('rate_another', $config)); ?></a>
+            <a href="download.php?<?php echo instance_query(); ?>" class="btn btn-secondary"><?php echo htmlspecialchars(translate('download_data', $config)); ?></a>
         </div>
     </div>
     

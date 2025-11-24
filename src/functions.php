@@ -45,6 +45,57 @@ function saveYaml($filename, $data) {
     return file_put_contents($filename, $yaml);
 }
 
+// Localization helpers
+function get_locale_from_config($config) {
+    if (!is_array($config)) return 'en';
+    // allow short codes like 'en' or full codes like 'en_US'
+    if (isset($config['ui']['locale']) && is_string($config['ui']['locale'])) {
+        return $config['ui']['locale'];
+    }
+    return 'en';
+}
+
+function load_locale_file($locale) {
+    static $cache = [];
+    $localeKey = (string)$locale;
+    if (isset($cache[$localeKey])) return $cache[$localeKey];
+
+    // support simple codes like 'en' or full codes like 'en_US'
+    $candidates = [$localeKey];
+    if (strpos($localeKey, '_') !== false) {
+        $parts = explode('_', $localeKey);
+        $candidates[] = $parts[0];
+    }
+    $found = [];
+    foreach ($candidates as $cand) {
+        $path = APP_ROOT . '/locale/' . $cand . '.yaml';
+        if (file_exists($path)) {
+            $found = loadYaml($path);
+            break;
+        }
+    }
+
+    // ensure we at least return an array
+    if (!is_array($found)) $found = [];
+    $cache[$localeKey] = $found;
+    return $found;
+}
+
+function translate($key, $config) {
+    $locale = get_locale_from_config($config);
+    $map = load_locale_file($locale);
+    if (isset($map[$key]) && is_string($map[$key])) return $map[$key];
+
+    // fallback to english locale file
+    if ($locale !== 'en') {
+        $en = load_locale_file('en');
+        if (isset($en[$key]) && is_string($en[$key])) return $en[$key];
+    }
+
+    // last fallback: return the key itself
+    return $key;
+}
+
 function parseIdentifier($identifier, $config) {
     error_log("Config is: " . print_r($config, true));
     $regex = null;

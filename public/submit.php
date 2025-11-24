@@ -16,14 +16,12 @@ if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
     exit;
 }
 
-// Determine which identifier to use
-$selected = $_POST['identifier'] ?? '';
-$manual = trim($_POST['manual_identifier'] ?? '');
-$raw = trim($_POST['raw_identifier'] ?? '');
+// Only the raw identifier is expected from the client
+$raw = trim($_POST['identifier'] ?? '');
 // Preserve fractional values from the slider: use float conversion
 $rating = isset($_POST['rating']) ? floatval($_POST['rating']) : null;
 
-if ($rating === null || ($selected === '' && $manual === '')) {
+if ($rating === null || $raw === '') {
     die('Error: Missing required fields. <a href="index.php">Go back</a>');
 }
 
@@ -34,35 +32,19 @@ if (!isset($data['items'])) {
     $data['items'] = [];
 }
 
-// Workflow:
-// - If user selected existing item, use that key as-is.
-// - If user provided manual input and a raw_identifier is present (came from QR parse),
-//   treat the manual value as the canonical key and store the raw original under 'source'.
-// - If user manually typed an identifier (no raw), use it as-is.
-if ($selected !== '') {
-    $key = $selected;
-    $displayName = $data['items'][$key]['name'] ?? $key;
-} else {
-    // manual provided
-    $key = $manual;
-    $displayName = $manual;
-    if ($raw !== '') {
-        // keep the original raw value as metadata
-        $sourceValue = $raw;
-    } else {
-        $sourceValue = null;
-    }
-}
+// Server-side parse to produce a canonical display name (prevents spoofing)
+$displayName = parseIdentifier($raw, $config);
+
+// Use the raw identifier as the authoritative storage key
+$key = $raw;
 
 // Initialize item if missing
 if (!isset($data['items'][$key])) {
     $item = [
         'name' => $displayName,
-        'ratings' => []
+        'ratings' => [],
+        'created' => date('Y-m-d H:i:s')
     ];
-    if (!empty($sourceValue)) {
-        $item['source'] = $sourceValue;
-    }
     $data['items'][$key] = $item;
 }
 

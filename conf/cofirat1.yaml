@@ -20,3 +20,10 @@ identifier:
   # Group 1 will always contain the trailing parts after the domain or the full identifier
   regex: '/^(?:https?:\/\/)?(?:www\.)?(?:coffeespot\.(?:com|cz)\/)?(.*)$/'
   groups: [1]
+
+# UI customization and localisation
+ui:
+  title: "Rate the coffee"
+  instructions: "Scan a QR code or select an item, then move the slider to submit your rating."
+  locale: "cs"
+  # Translations are managed in the `locale/` directory as YAML files.

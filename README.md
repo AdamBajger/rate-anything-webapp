@@ -79,12 +79,13 @@ Quick Docker (development)
 PowerShell (Windows) — recommended for interactive development (keeps your original command):
 
 ```powershell
-docker run -d -p 8080:80 --rm --name rate-app `
+docker run -d -p 8080:8080 --rm --name rate-app `
   -v "${PWD}\public:/var/www/html/public:rw" `
   -v "${PWD}\src:/var/www/html/src:rw" `
   -v "${PWD}\conf:/var/www/html/conf:rw" `
   -v "${PWD}\data:/var/www/html/data:rw" `
-  adambajger/rate-anything-webapp:1.0.0
+  -v "${PWD}\locale:/var/www/html/locale:rw" `
+  adambajger/rate-anything-webapp:1.0.4
 ```
 
 Notes
