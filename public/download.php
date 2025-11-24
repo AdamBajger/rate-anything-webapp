@@ -3,10 +3,13 @@
 
 require_once __DIR__ . '/bootstrap.php';
 
+$config = loadYaml(config_file(get_instance_id()));
 $data = loadYaml(data_file(get_instance_id()));
 
 if (empty($data)) {
-    die('No data available for download.');
+    $msg = htmlspecialchars(translate('no_data_download', $config));
+    $go = '<a href="index.php">' . htmlspecialchars(translate('go_back', $config)) . '</a>';
+    die($msg . ' ' . $go);
 }
 
 header('Content-Type: application/x-yaml');
@@ -17,5 +20,5 @@ header('Expires: 0');
 if (function_exists('yaml_emit')) {
     echo yaml_emit($data);
 } else {
-    die('ERROR: PHP YAML extension is required for data download.');
+    die(htmlspecialchars(translate('error_yaml_required_download', $config)));
 }

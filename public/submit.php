@@ -16,16 +16,20 @@ if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
     exit;
 }
 
+// Load config early so we can localize validation messages
+$config = loadYaml(config_file(get_instance_id()));
+
 // Only the raw identifier is expected from the client
 $raw = trim($_POST['identifier'] ?? '');
 // Preserve fractional values from the slider: use float conversion
 $rating = isset($_POST['rating']) ? floatval($_POST['rating']) : null;
 
 if ($rating === null || $raw === '') {
-    die('Error: Missing required fields. <a href="index.php">Go back</a>');
+    $msg = htmlspecialchars(translate('error_missing_fields', $config));
+    $go = '<a href="index.php">' . htmlspecialchars(translate('go_back', $config)) . '</a>';
+    die($msg . ' ' . $go);
 }
 
-$config = loadYaml(config_file(get_instance_id()));
 $data = loadYaml(data_file(get_instance_id()));
 
 if (!isset($data['items'])) {
@@ -60,5 +64,7 @@ if (saveYaml(data_file(get_instance_id()), $data)) {
     header('Location: leaderboard.php?' . $qs);
     exit;
 } else {
-    die('Error: Failed to save rating. <a href="index.php">Go back</a>');
+    $msg = htmlspecialchars(translate('error_save_failed', $config));
+    $go = '<a href="index.php">' . htmlspecialchars(translate('go_back', $config)) . '</a>';
+    die($msg . ' ' . $go);
 }

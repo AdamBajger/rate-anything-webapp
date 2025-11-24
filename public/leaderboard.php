@@ -67,7 +67,7 @@ foreach ($leaderboard as $item) {
         
         <?php if ($success): ?>
             <div class="alert alert-success">
-                Rating submitted successfully!
+                <?php echo htmlspecialchars(translate('rating_submitted_success', $config)); ?>
                 <?php if ($submittedIdentifier): ?>
                     <strong><?php echo htmlspecialchars($submittedIdentifier); ?></strong>
                 <?php endif; ?>
@@ -80,14 +80,14 @@ foreach ($leaderboard as $item) {
             </div>
         <?php else: ?>
             <div class="card">
-                <h2>Rankings</h2>
+                <h2><?php echo htmlspecialchars(translate('rankings_heading', $config)); ?></h2>
                 <table>
                                         <thead>
                                             <tr>
-                                                <th>Rank</th>
-                                                <th>Item</th>
-                                                <th>Popularity</th>
-                                                <th>Average Rating</th>
+                                                <th><?php echo htmlspecialchars(translate('table_rank', $config)); ?></th>
+                                                <th><?php echo htmlspecialchars(translate('table_item', $config)); ?></th>
+                                                <th><?php echo htmlspecialchars(translate('table_popularity', $config)); ?></th>
+                                                <th><?php echo htmlspecialchars(translate('table_average_rating', $config)); ?></th>
                                             </tr>
                                         </thead>
                     <tbody>
