@@ -33,7 +33,11 @@ rate-anything-webapp/
 ├── locale/              # Localization files
 │   ├── en.yaml          # English translations
 │   └── cs.yaml          # Czech translations
+├── tests/               # PHPUnit tests
+│   ├── Unit/            # Unit tests
+│   └── Integration/     # Integration tests
 ├── nginx/               # Nginx configuration
+├── .github/workflows/   # CI/CD workflows
 └── Dockerfile           # Docker image definition
 ```
 
@@ -79,6 +83,40 @@ cd rate-anything-webapp
 docker build -t rate-anything-webapp .
 docker run -d -p 8080:8080 --name rate-app rate-anything-webapp
 ```
+
+## Testing
+
+The project includes comprehensive tests using PHPUnit.
+
+### Running Tests Locally
+
+```bash
+# Install dependencies
+composer install
+
+# Run all tests
+composer test
+
+# Or run PHPUnit directly
+./vendor/bin/phpunit
+```
+
+### Test Structure
+
+- **Unit Tests** (`tests/Unit/`): Test individual functions in isolation
+  - `ParseIdentifierTest.php`: Tests regex-based identifier parsing with various patterns
+  - `CalculateStatsTest.php`: Tests statistics calculation for ratings
+  - `LocalizationTest.php`: Tests translation and locale functions
+
+- **Integration Tests** (`tests/Integration/`): Test component interactions
+  - `BootstrapTest.php`: Tests path resolution functions
+
+### CI/CD
+
+GitHub Actions automatically runs on every push and pull request:
+- PHP syntax linting
+- PHPUnit tests
+- Docker build and endpoint tests
 
 ## Multi-Instance Support
 

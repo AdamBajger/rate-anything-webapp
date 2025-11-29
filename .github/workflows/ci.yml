@@ -1,0 +1,143 @@
+name: CI/CD
+
+on:
+  push:
+    branches: [main, master]
+  pull_request:
+    branches: [main, master]
+
+jobs:
+  # Run PHPUnit tests
+  test:
+    name: PHP Tests
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup PHP
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: '8.3'
+          extensions: yaml
+          coverage: none
+
+      - name: Install Composer dependencies
+        run: composer install --prefer-dist --no-progress
+
+      - name: Run PHPUnit tests
+        run: composer test
+
+  # Lint PHP files
+  lint:
+    name: PHP Lint
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup PHP
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: '8.3'
+
+      - name: Check PHP syntax
+        run: |
+          find src public -name "*.php" -print0 | xargs -0 -n1 php -l
+
+  # Build and test Docker image
+  docker:
+    name: Docker Build & Test
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Build Docker image
+        run: docker build -t rate-anything-webapp:test .
+
+      - name: Start container
+        run: |
+          docker run -d --name test-container -p 8080:8080 rate-anything-webapp:test
+          sleep 5  # Wait for services to start
+
+      - name: Test index endpoint
+        run: |
+          response=$(curl -s -o /dev/null -w "%{http_code}" http://localhost:8080/)
+          if [ "$response" != "200" ]; then
+            echo "Index endpoint returned $response instead of 200"
+            docker logs test-container
+            exit 1
+          fi
+          echo "Index endpoint: OK ($response)"
+
+      - name: Test leaderboard endpoint
+        run: |
+          response=$(curl -s -o /dev/null -w "%{http_code}" http://localhost:8080/leaderboard.php)
+          if [ "$response" != "200" ]; then
+            echo "Leaderboard endpoint returned $response instead of 200"
+            docker logs test-container
+            exit 1
+          fi
+          echo "Leaderboard endpoint: OK ($response)"
+
+      - name: Test parse endpoint
+        run: |
+          response=$(curl -s -o /dev/null -w "%{http_code}" "http://localhost:8080/parse.php?identifier=test-item")
+          if [ "$response" != "200" ]; then
+            echo "Parse endpoint returned $response instead of 200"
+            docker logs test-container
+            exit 1
+          fi
+          echo "Parse endpoint: OK ($response)"
+
+      - name: Test parse endpoint returns JSON
+        run: |
+          content=$(curl -s "http://localhost:8080/parse.php?identifier=test-coffee-item")
+          if ! echo "$content" | jq -e '.parsed' > /dev/null 2>&1; then
+            echo "Parse endpoint did not return valid JSON with 'parsed' field"
+            echo "Response: $content"
+            exit 1
+          fi
+          echo "Parse endpoint returns valid JSON: $content"
+
+      - name: Test submit endpoint (POST)
+        run: |
+          response=$(curl -s -o /dev/null -w "%{http_code}" -X POST \
+            -d "identifier=test-item-001&rating=4.5" \
+            http://localhost:8080/submit.php)
+          # Should redirect (302) on success
+          if [ "$response" != "302" ]; then
+            echo "Submit endpoint returned $response instead of 302"
+            docker logs test-container
+            exit 1
+          fi
+          echo "Submit endpoint: OK ($response)"
+
+      - name: Test download endpoint (with data)
+        run: |
+          response=$(curl -s -o /dev/null -w "%{http_code}" http://localhost:8080/download.php)
+          # Should return 200 after we submitted a rating
+          if [ "$response" != "200" ]; then
+            echo "Download endpoint returned $response instead of 200"
+            docker logs test-container
+            exit 1
+          fi
+          echo "Download endpoint: OK ($response)"
+
+      - name: Test instance parameter
+        run: |
+          response=$(curl -s -o /dev/null -w "%{http_code}" "http://localhost:8080/?instance=cofirat1")
+          if [ "$response" != "200" ]; then
+            echo "Instance endpoint returned $response instead of 200"
+            docker logs test-container
+            exit 1
+          fi
+          echo "Instance parameter: OK ($response)"
+
+      - name: Cleanup
+        if: always()
+        run: docker rm -f test-container || true

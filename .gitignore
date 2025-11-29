@@ -23,3 +23,6 @@ data.yaml
 # Dependencies (if using Composer)
 /vendor/
 composer.lock
+
+# PHPUnit
+.phpunit.cache/
