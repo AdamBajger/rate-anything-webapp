@@ -1,0 +1,15 @@
+---
+items:
+  www.coffeespot.cz/diamond-sack-of-balls:
+    name: Diamond Sack Of Balls
+    ratings:
+    - rating: -0.8
+      timestamp: "2025-11-24 20:31:17"
+    created: "2025-11-24 20:31:17"
+  www.coffeespot.cz/brazilie-diamond-santos:
+    name: Brazilie Diamond Santos
+    ratings:
+    - rating: 0.3
+      timestamp: "2025-11-24 20:36:01"
+    created: "2025-11-24 20:36:01"
+...

@@ -1,0 +1,29 @@
+# Configuration for rate-anything-webapp
+
+# Rating scale configuration
+rating:
+  min: 1
+  max: 5
+  labels:
+    -1: "Awful"
+    0: "Not good nor bad"
+    1: "Excellent"
+
+# Identifier parsing configuration
+# Regex to extract name from identifier (first captured group is used)
+# Example: "item-001-coffee-machine" with regex "^[a-z]+-\\d+-(.*?)$" extracts "coffee-machine"
+identifier:
+  # Capture the path after the domain when present, otherwise capture the whole identifier
+  # - optional protocol (http/https)
+  # - optional www.
+  # - optional coffeespot.com or coffeespot.cz and a slash
+  # Group 1 will always contain the trailing parts after the domain or the full identifier
+  regex: '/^(?:https?:\/\/)?(?:www\.)?(?:coffeespot\.(?:com|cz)\/)?(.*)$/'
+  groups: [1]
+
+# UI customization and localisation
+ui:
+  title: "Rate the coffee"
+  instructions: "Scan a QR code or select an item, then move the slider to submit your rating."
+  locale: "cs"
+  # Translations are managed in the `locale/` directory as YAML files.
