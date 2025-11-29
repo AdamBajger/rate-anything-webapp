@@ -1,123 +1,154 @@
 # Rate Anything Web Application
 
-A lightweight web application for rating items using QR code scanning. The application provides a simple, responsive interface for collecting and displaying ratings with persistent storage in YAML format.
+A lightweight PHP web application for rating items using QR code scanning. Designed for easy deployment with Docker and supports multiple isolated instances.
 
-## Overview
+## Features
 
-This application enables users to scan QR codes or manually select items to rate them on a configurable scale (default 1-5). All ratings are stored persistently in YAML files and displayed in a leaderboard with detailed statistics. The design is modular and follows best practices for potential future migration to database storage.
+- **QR Code Scanner**: Camera-based scanning using html5-qrcode library
+- **Flexible Rating Scale**: Configurable rating values with custom labels
+- **Multi-Instance Support**: Run multiple isolated rating instances from a single deployment
+- **Localization**: Built-in support for multiple languages (English, Czech)
+- **Data Backup**: Download ratings as YAML files for backup
+- **Responsive Design**: Mobile-friendly interface
+- **Persistent Storage**: YAML-based data storage
 
-## Architecture
+## Project Structure
 
-The application follows a small, opinionated structure to separate public assets from application logic:
-- `public/`: webroot — contains entry points and static assets served by the webserver (e.g. `index.php`, `leaderboard.php`, `submit.php`, `download.php`, `style.css`).
-- `src/`: application code — PHP helpers, functions and business logic (not directly web-accessible).
-- `config.yaml` and `data.yaml`: configuration and persistent YAML storage at the project root.
+```
+rate-anything-webapp/
+├── public/              # Webroot (served by nginx)
+│   ├── index.php        # Main rating interface with QR scanner
+│   ├── leaderboard.php  # Rankings and statistics display
+│   ├── submit.php       # Rating submission handler
+│   ├── download.php     # Data backup endpoint
+│   ├── parse.php        # Identifier parsing API
+│   ├── bootstrap.php    # Application bootstrap
+│   └── style.css        # Stylesheet
+├── src/
+│   └── functions.php    # Core utility functions
+├── conf/                # Per-instance configuration files
+│   └── {instance}.yaml
+├── data/                # Per-instance data files
+│   └── {instance}.yaml
+├── locale/              # Localization files
+│   ├── en.yaml          # English translations
+│   └── cs.yaml          # Czech translations
+├── nginx/               # Nginx configuration
+└── Dockerfile           # Docker image definition
+```
 
-Benefits: clearer security boundary (only `public/` is served), easier bind-mounting for development, and simpler Docker image builds.
+## Quick Start with Docker
 
-## Key Features
+```bash
+# Pull and run the pre-built image
+docker run -d -p 8080:8080 --name rate-app adambajger/rate-anything-webapp:latest
 
-- QR Code Scanner: Camera-based scanning using html5-qrcode library
-- Flexible Rating Scale: Configurable minimum and maximum values with custom labels
-- Persistent Storage: YAML-based data storage with complete rating history
-- Statistics Dashboard: Leaderboard with averages, distributions, and recent ratings
-- Responsive Design: Mobile-friendly interface that works on all devices
-- Identifier Parsing: Configurable rules for converting identifiers to human-readable names
-- Input Validation: XSS protection and sanitization for all user inputs
-- Modular Design: Storage layer designed for easy migration to database systems
+# Access the application
+open http://localhost:8080
+```
 
-## System Requirements
+### Development with Volume Mounts
 
-- PHP 8.0 or higher
-- PHP YAML extension (php-yaml)
-- Web server (nginx)
-- Modern web browser with camera support for QR scanning
+Mount local directories for live editing:
 
-## Docker Deployment (Recommended)
+```bash
+# Linux/macOS
+docker run -d -p 8080:8080 --rm --name rate-app \
+  -v "$(pwd)/public:/var/www/html/public:rw" \
+  -v "$(pwd)/src:/var/www/html/src:rw" \
+  -v "$(pwd)/conf:/var/www/html/conf:rw" \
+  -v "$(pwd)/data:/var/www/html/data:rw" \
+  -v "$(pwd)/locale:/var/www/html/locale:rw" \
+  adambajger/rate-anything-webapp:latest
 
-The application is designed to run in a Docker container for consistent deployment across environments.
-
-### Important: PHP YAML Extension Requirement
-
-This application requires the PHP YAML extension. Due to connectivity limitations in certain build environments, the YAML extension cannot always be automatically installed during the Docker build process. 
-
-**For production deployment on Google Compute Engine or similar platforms with full internet access, the extension should install successfully during the build.**
-
-If you encounter issues, the application will display an error message requesting installation of the extension. The code is designed to handle missing extensions gracefully without crashing.
-
-### Quick Start with Docker
-
-1. Clone the repository:
-   ```bash
-   git clone https://github.com/AdamBajger/rate-anything-webapp.git
-   cd rate-anything-webapp
-   ```
-
-2. Build the Docker image:
-   ```bash
-   docker build -t rate-anything-webapp .
-   ```
-
-3. Run the container:
-   ```bash
-   docker run -d -p 8080:80 --name rate-app rate-anything-webapp
-   ```
-
-# Rate Anything Webapp — concise
-
-A small PHP app to scan or enter item identifiers and collect ratings stored in YAML files. Designed for easy local development with Docker and simple per-instance configuration.
-
-Key points
-- Webroot: `public/` (entrypoints: `index.php`, `leaderboard.php`, `submit.php`, `download.php`) 
-- App code: `src/`
-- Per-instance files: `conf/{id}.yaml` and `data/{id}.yaml` (selected with `?instance={id}`)
-- Default fallback: project-level `config.yaml` and `data.yaml` when no `instance` is provided
-- Download endpoint (`download.php`) requires the PHP YAML extension (`yaml_emit`)
-
-Quick Docker (development)
-
-PowerShell (Windows) — recommended for interactive development (keeps your original command):
-
-```powershell
+# Windows PowerShell
 docker run -d -p 8080:8080 --rm --name rate-app `
   -v "${PWD}\public:/var/www/html/public:rw" `
   -v "${PWD}\src:/var/www/html/src:rw" `
   -v "${PWD}\conf:/var/www/html/conf:rw" `
   -v "${PWD}\data:/var/www/html/data:rw" `
   -v "${PWD}\locale:/var/www/html/locale:rw" `
-  adambajger/rate-anything-webapp:1.0.4
+  adambajger/rate-anything-webapp:latest
 ```
 
-Notes
-- To use an instance, create `conf/{id}.yaml` and `data/{id}.yaml` (you can copy top-level YAMLs):
-  ```powershell
-  copy config.yaml conf\cofirat1.yaml
-  copy data.yaml data\cofirat1.yaml
-  ```
-- Visit `http://localhost:8080/?instance=cofirat1` (or append `?instance=` to other pages).
-- The `instance` value is validated (alphanumeric, `_` and `-`, up to 32 chars) to avoid unsafe paths.
-- If `conf/{id}.yaml` or `data/{id}.yaml` are missing, the app falls back to `config.yaml`/`data.yaml`.
+### Build from Source
 
-Requirements
-- PHP 8+
-- (Optional but recommended) PHP YAML extension (`php-yaml`) for full YAML emit/parsing and the download endpoint
-- Modern browser for QR scanning (camera access)
-
-File layout (relevant)
-
-```
-rate-anything-webapp/
-├── public/           # Webroot (served by nginx/apache)
-├── src/              # Application logic
-├── conf/             # Optional per-instance config files
-├── data/             # Optional per-instance data files
-├── config.yaml       # Default config
-└── data.yaml         # Default data
+```bash
+git clone https://github.com/AdamBajger/rate-anything-webapp.git
+cd rate-anything-webapp
+docker build -t rate-anything-webapp .
+docker run -d -p 8080:8080 --name rate-app rate-anything-webapp
 ```
 
-Troubleshooting
-- Ratings not appearing: ensure the container has `data/` mounted and writable. Check `docker logs rate-app`.
-- Download fails with 'PHP YAML extension is required': install `php-yaml` in the image or host PHP.
+## Multi-Instance Support
 
-If you'd like, I can also add a one-line CLI/admin script to create instance YAML files safely.
-  --name rate-app rate-anything-webapp
+Run multiple isolated rating systems from a single deployment using the `?instance=` query parameter.
+
+### Setup an Instance
+
+1. Create configuration and data files:
+   ```bash
+   cp conf/.yaml conf/myinstance.yaml
+   cp data/.yaml data/myinstance.yaml
+   ```
+
+2. Access the instance:
+   ```
+   http://localhost:8080/?instance=myinstance
+   http://localhost:8080/leaderboard.php?instance=myinstance
+   ```
+
+Instance IDs must be alphanumeric (plus `_` and `-`), up to 32 characters.
+
+## Configuration
+
+Each instance has its own configuration file (`conf/{instance}.yaml`):
+
+```yaml
+# Rating scale configuration
+rating:
+  labels:
+    -1: "Awful"
+    0: "Neutral"
+    1: "Excellent"
+
+# Identifier parsing (regex to extract display name from QR codes)
+identifier:
+  regex: '/^(?:https?:\/\/)?(?:www\.)?(?:example\.com\/)?(.*)$/'
+  groups: [1]
+
+# UI customization
+ui:
+  title: "Rate the Coffee"
+  instructions: "Scan a QR code or select an item to rate."
+  locale: "en"  # or "cs" for Czech
+```
+
+## Data Backup
+
+Download ratings data from the leaderboard page using the "Download Data" button, or directly via:
+
+```
+http://localhost:8080/download.php?instance=myinstance
+```
+
+This downloads a timestamped YAML file containing all ratings for backup purposes.
+
+## Requirements
+
+- PHP 8.0+
+- PHP YAML extension (`php-yaml`)
+- Nginx (included in Docker image)
+- Modern browser with camera support for QR scanning
+
+## Troubleshooting
+
+| Issue | Solution |
+|-------|----------|
+| Ratings not saving | Ensure `data/` directory is writable. Check `docker logs rate-app`. |
+| Download fails | PHP YAML extension required. The Docker image includes this. |
+| Camera not working | Requires HTTPS in production, or localhost for development. |
+
+## License
+
+This project is open source and available under the MIT License.
